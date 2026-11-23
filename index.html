@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GEMINI 4 NEON // WebGPU 3D Demoscene</title>
+
+  <!-- Tailwind CSS for responsive futuristic HUD layout -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Futuristic Sci-Fi Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --neon-crimson: #ff1e6b;
+      --neon-cyan: #00f5ff;
+      --neon-violet: #7b2fff;
+      --neon-plasma: #ff7b00;
+      --void-bg: #04020a;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--void-bg);
+      color: #f4f6ff;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      user-select: none;
+    }
+
+    /* Fullscreen WebGPU / WebGL2 Render Canvas */
+    #demo-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #demo-canvas:active {
+      cursor: grabbing;
+    }
+
+    .font-display {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Neon Title Glow & Subtle Glitch / Scan Shimmer */
+    .neon-title-gemini {
+      letter-spacing: 0.22em;
+      text-shadow:
+        0 0 12px rgba(0, 245, 255, 0.55),
+        0 0 28px rgba(123, 47, 255, 0.35);
+    }
+
+    .neon-title-neon {
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(95deg, #ff1e6b 0%, #ff7b00 35%, #ffffff 52%, #00f5ff 75%, #7b2fff 100%);
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 10px rgba(255, 30, 107, 0.7))
+              drop-shadow(0 0 24px rgba(0, 245, 255, 0.45));
+      animation: neonShimmer 4.5s linear infinite;
+    }
+
+    .neon-title-neon::after {
+      content: 'NEON';
+      position: absolute;
+      inset: 0;
+      color: rgba(0, 245, 255, 0.75);
+      clip-path: inset(0 0 100% 0);
+      pointer-events: none;
+      animation: glitchScan 6.4s infinite;
+    }
+
+    @keyframes neonShimmer {
+      0% { background-position: 0% center; }
+      100% { background-position: 220% center; }
+    }
+
+    @keyframes glitchScan {
+      0%, 88%, 100% {
+        clip-path: inset(0 0 100% 0);
+        transform: translate(0, 0);
+        opacity: 0;
+      }
+      89% {
+        clip-path: inset(18% 0 58% 0);
+        transform: translate(-3px, 0);
+        opacity: 0.85;
+      }
+      90.5% {
+        clip-path: inset(56% 0 16% 0);
+        transform: translate(3px, 0);
+        color: rgba(255, 30, 107, 0.9);
+        opacity: 0.9;
+      }
+      92% {
+        clip-path: inset(32% 0 44% 0);
+        transform: translate(-2px, 0);
+        color: rgba(0, 245, 255, 0.85);
+        opacity: 0.7;
+      }
+      93.5% {
+        clip-path: inset(0 0 100% 0);
+        transform: translate(0, 0);
+        opacity: 0;
+      }
+    }
+
+    /* Translucent Glassmorphism HUD Surfaces */
+    .glass-panel {
+      background: linear-gradient(135deg, rgba(12, 8, 28, 0.72), rgba(7, 5, 18, 0.56));
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    /* Element Ne-10 Periodic Badge */
+    .ne10-badge {
+      background: linear-gradient(145deg, rgba(255, 30, 107, 0.22), rgba(123, 47, 255, 0.22));
+      border: 1px solid rgba(255, 30, 107, 0.65);
+      box-shadow:
+        0 0 16px rgba(255, 30, 107, 0.35),
+        inset 0 0 12px rgba(255, 123, 0, 0.18);
+    }
+
+    /* Audio Pulse Prompt */
+    .audio-cta-pulse {
+      box-shadow:
+        0 0 0 0 rgba(255, 30, 107, 0.65),
+        0 0 18px rgba(255, 30, 107, 0.45);
+      animation: audioPulseRing 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+
+    @keyframes audioPulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(255, 30, 107, 0.65), 0 0 18px rgba(255, 30, 107, 0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 30, 107, 0), 0 0 24px rgba(0, 245, 255, 0.35); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 30, 107, 0), 0 0 18px rgba(255, 30, 107, 0.45); }
+    }
+
+    /* Custom Futuristic Range Sliders */
+    input[type='range'].neon-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type='range'].neon-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #00f5ff;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px #00f5ff, 0 0 18px rgba(255, 30, 107, 0.65);
+      transition: transform 0.15s ease;
+    }
+
+    input[type='range'].neon-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    input[type='range'].neon-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #00f5ff;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px #00f5ff, 0 0 18px rgba(255, 30, 107, 0.65);
+    }
+
+    /* Scene Pill Buttons */
+    .scene-btn {
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .scene-btn:hover {
+      border-color: rgba(0, 245, 255, 0.45);
+      background: rgba(0, 245, 255, 0.1);
+    }
+
+    .scene-btn.active {
+      background: linear-gradient(135deg, rgba(255, 30, 107, 0.32), rgba(0, 245, 255, 0.26));
+      border-color: rgba(0, 245, 255, 0.85);
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(0, 245, 255, 0.3), inset 0 0 10px rgba(255, 30, 107, 0.25);
+    }
+
+    /* HUD Collapse Transition */
+    #hud-layer {
+      transition: opacity 0.38s ease, transform 0.38s ease;
+    }
+
+    #hud-layer.hud-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.015);
+    }
+
+    #hud-restore-pill {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    /* Subtle animated equalizer bars for active audio */
+    .eq-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: #00f5ff;
+      transition: height 0.07s linear;
+    }
+  </style>
+</head>
+<body>
+  <!-- Main 3D Raymarched WebGPU / WebGL2 Canvas -->
+  <canvas id="demo-canvas" aria-label="GEMINI 4 NEON 3D WebGPU Demoscene"></canvas>
+
+  <!-- Subtle Restore HUD Pill (Visible only when HUD is collapsed) -->
+  <button
+    id="hud-restore-pill"
+    type="button"
+    class="fixed top-4 right-4 z-40 hidden items-center gap-2 rounded-full glass-panel px-4 py-2 text-xs font-mono-tech tracking-wider text-cyan-200 hover:text-white hover:border-cyan-400 transition cursor-pointer"
+    title="Show HUD (H)"
+  >
+    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+    <span>SHOW HUD [H]</span>
+  </button>
+
+  <!-- Interactive Sci-Fi HUD Overlay -->
+  <div id="hud-layer" class="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between p-3 sm:p-5 lg:p-6">
+
+    <!-- TOP ROW: Hero Branding (Left) + Backend Telemetry & Quick Actions (Right) -->
+    <div class="flex flex-col sm:flex-row items-start justify-between gap-3 w-full">
+
+      <!-- Left: Futuristic GEMINI 4 NEON Branding -->
+      <div class="pointer-events-auto flex flex-col gap-1.5 max-w-full">
+        <div class="flex items-center gap-2.5 sm:gap-3.5">
+          <!-- Element Badge Ne · 10 -->
+          <div class="ne10-badge rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 flex flex-col items-center justify-center leading-none shrink-0">
+            <span class="font-mono-tech text-[9px] sm:text-[10px] text-orange-300/90 tracking-widest self-end">10</span>
+            <span class="font-display font-black text-base sm:text-xl text-white tracking-tight -mt-0.5">Ne</span>
+            <span class="font-mono-tech text-[8px] text-pink-200/80 tracking-widest mt-0.5">20.18</span>
+          </div>
+
+          <!-- Title Stack -->
+          <div class="flex flex-col">
+            <div class="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+              <h1 class="font-display font-bold text-lg sm:text-2xl lg:text-3xl text-white neon-title-gemini leading-none">
+                GEMINI 4
+              </h1>
+              <span class="font-display font-black text-2xl sm:text-4xl lg:text-5xl tracking-widest neon-title-neon leading-none">
+                NEON
+              </span>
+            </div>
+            <div class="mt-1 flex items-center gap-2 flex-wrap">
+              <span class="font-mono-tech text-[10px] sm:text-[11px] tracking-[0.18em] text-cyan-200/85 uppercase">
+                FLASH VELOCITY // 1M MULTIMODAL // <span id="meta-shader-tag">WGSL RAYMARCH</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Act Telemetry Strip -->
+        <div class="mt-1 flex items-center gap-2.5 glass-panel rounded-xl px-3 py-1.5 w-fit max-w-full">
+          <span id="beat-led" class="w-2 h-2 rounded-full bg-pink-500 shadow-[0_0_10px_#ff1e6b] shrink-0"></span>
+          <span id="act-label" class="font-mono-tech text-[11px] sm:text-xs font-semibold tracking-widest text-white truncate">
+            ACT I // PLASMA CONDUIT
+          </span>
+          <span class="hidden sm:inline text-white/25">|</span>
+          <div class="hidden sm:flex items-center gap-1.5">
+            <div class="w-24 h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div id="demo-progress-bar" class="h-full w-0 rounded-full bg-gradient-to-r from-pink-500 via-orange-400 to-cyan-400"></div>
+            </div>
+            <span id="demo-clock" class="font-mono-tech text-[10px] text-cyan-300/85 w-10 text-right">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Backend Status Pill, FPS, Prominent Audio Toggle, Hide HUD -->
+      <div class="pointer-events-auto flex flex-wrap items-center justify-end gap-2 self-end sm:self-start">
+        <!-- GPU Backend + FPS Pill -->
+        <div class="glass-panel rounded-full px-3 py-1.5 flex items-center gap-2.5">
+          <div class="flex items-center gap-1.5">
+            <span id="backend-dot" class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f5ff]"></span>
+            <span id="backend-label" class="font-mono-tech text-[10px] sm:text-[11px] font-bold tracking-wider text-cyan-200">
+              INIT GPU...
+            </span>
+          </div>
+          <span class="text-white/20">|</span>
+          <div class="flex items-baseline gap-1 font-mono-tech">
+            <span id="fps-value" class="text-xs font-bold text-white">60</span>
+            <span class="text-[9px] text-cyan-300/80">FPS</span>
+          </div>
+          <span id="res-scale-label" class="hidden md:inline font-mono-tech text-[9px] text-white/50">100%</span>
+        </div>
+
+        <!-- Prominent ENABLE AUDIO Button -->
+        <button
+          id="top-audio-btn"
+          type="button"
+          class="audio-cta-pulse flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-display font-bold tracking-wider text-white bg-gradient-to-r from-pink-600/85 via-fuchsia-600/85 to-violet-600/85 border border-pink-300/60 hover:brightness-115 active:scale-95 transition cursor-pointer"
+          title="Toggle 128 BPM Procedural Demoscene Synth (M)"
+        >
+          <span id="top-audio-icon" class="flex items-center justify-center">
+            <!-- Speaker muted icon -->
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </span>
+          <span id="top-audio-text">ENABLE AUDIO</span>
+          <span id="top-audio-eq" class="hidden items-end gap-0.5 h-3">
+            <span class="eq-bar h-1"></span>
+            <span class="eq-bar h-2"></span>
+            <span class="eq-bar h-1.5"></span>
+            <span class="eq-bar h-2.5"></span>
+          </span>
+        </button>
+
+        <!-- Hide HUD Toggle -->
+        <button
+          id="hide-hud-btn"
+          type="button"
+          class="glass-panel rounded-full px-3 py-2 text-[11px] font-mono-tech tracking-wider text-white/85 hover:text-cyan-300 hover:border-cyan-400/60 active:scale-95 transition cursor-pointer"
+          title="Hide HUD for pure full-screen demoscene viewing (H)"
+        >
+          HIDE HUD
+        </button>
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW: Translucent Glass Control Bar -->
+    <div class="pointer-events-auto w-full flex flex-col items-center gap-2">
+      <!-- Subtle Parallax Hint -->
+      <div class="hidden sm:flex items-center gap-2 text-[10px] font-mono-tech tracking-widest text-white/45 uppercase">
+        <span>MOVE OR DRAG TO ORBIT CAMERA</span>
+        <span>•</span>
+        <span>SPACE: PLAY/PAUSE</span>
+        <span>•</span>
+        <span>M: SYNTH</span>
+        <span>•</span>
+        <span>H: HIDE HUD</span>
+      </div>
+
+      <!-- Main Control Bar -->
+      <div class="glass-panel rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 w-full max-w-5xl flex flex-col lg:flex-row items-center justify-between gap-3">
+
+        <!-- Transport & Audio Controls -->
+        <div class="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-start">
+          <div class="flex items-center gap-2">
+            <!-- Play / Pause -->
+            <button
+              id="play-pause-btn"
+              type="button"
+              class="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-mono-tech font-semibold bg-cyan-500/15 border border-cyan-400/45 text-cyan-100 hover:bg-cyan-500/25 active:scale-95 transition cursor-pointer min-w-[84px]"
+              title="Play / Pause Animation (Space)"
+            >
+              <span id="play-pause-icon">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                  <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                </svg>
+              </span>
+              <span id="play-pause-text">PAUSE</span>
+            </button>
+
+            <!-- Secondary Audio Synth Toggle -->
+            <button
+              id="bar-audio-btn"
+              type="button"
+              class="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-mono-tech font-semibold bg-white/5 border border-white/15 text-white/80 hover:border-pink-400/60 hover:text-white active:scale-95 transition cursor-pointer"
+              title="Toggle 128 BPM Synth (M)"
+            >
+              <span id="bar-audio-dot" class="w-2 h-2 rounded-full bg-white/35"></span>
+              <span id="bar-audio-label">SYNTH OFF</span>
+            </button>
+          </div>
+
+          <!-- Compact Mobile Reset Camera -->
+          <button
+            id="reset-cam-btn"
+            type="button"
+            class="lg:hidden rounded-xl px-2.5 py-2 text-[10px] font-mono-tech text-white/70 bg-white/5 border border-white/10 hover:text-cyan-300 cursor-pointer"
+            title="Reset Camera Parallax"
+          >
+            RESET CAM
+          </button>
+        </div>
+
+        <!-- Scene Selector Pills -->
+        <div class="grid grid-cols-2 sm:flex items-center gap-1.5 w-full lg:w-auto">
+          <button type="button" data-scene="auto" class="scene-btn active rounded-xl px-2.5 py-2 text-[10px] sm:text-[11px] font-mono-tech font-semibold tracking-wider text-white/90 cursor-pointer whitespace-nowrap">
+            AUTO DEMO
+          </button>
+          <button type="button" data-scene="0" class="scene-btn rounded-xl px-2.5 py-2 text-[10px] sm:text-[11px] font-mono-tech font-semibold tracking-wider text-white/80 cursor-pointer whitespace-nowrap">
+            ACT I: CONDUIT
+          </button>
+          <button type="button" data-scene="1" class="scene-btn rounded-xl px-2.5 py-2 text-[10px] sm:text-[11px] font-mono-tech font-semibold tracking-wider text-white/80 cursor-pointer whitespace-nowrap">
+            ACT II: CORE
+          </button>
+          <button type="button" data-scene="2" class="scene-btn rounded-xl px-2.5 py-2 text-[10px] sm:text-[11px] font-mono-tech font-semibold tracking-wider text-white/80 cursor-pointer whitespace-nowrap">
+            ACT III: OVERDRIVE
+          </button>
+        </div>
+
+        <!-- Sliders: Overdrive Glow & Motion Speed -->
+        <div class="flex items-center gap-4 w-full lg:w-auto justify-between sm:justify-end">
+          <label class="flex flex-col gap-1 flex-1 sm:flex-none sm:w-32">
+            <div class="flex items-center justify-between text-[10px] font-mono-tech tracking-wider">
+              <span class="text-pink-300/90">OVERDRIVE</span>
+              <span id="overdrive-val" class="text-white/85">1.15x</span>
+            </div>
+            <input id="overdrive-slider" type="range" min="0.55" max="2.0" step="0.05" value="1.15" class="neon-slider w-full" />
+          </label>
+
+          <label class="flex flex-col gap-1 flex-1 sm:flex-none sm:w-32">
+            <div class="flex items-center justify-between text-[10px] font-mono-tech tracking-wider">
+              <span class="text-cyan-300/90">VELOCITY</span>
+              <span id="speed-val" class="text-white/85">1.00x</span>
+            </div>
+            <input id="speed-slider" type="range" min="0.25" max="2.25" step="0.05" value="1.00" class="neon-slider w-full" />
+          </label>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message Banner (Only displayed if neither WebGPU nor WebGL2 exists) -->
+  <div id="fatal-error-box" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/90 p-6">
+    <div class="glass-panel max-w-md rounded-2xl p-6 text-center border-pink-500/50">
+      <h2 class="font-display text-xl font-bold text-pink-400 mb-2">GPU INITIALIZATION NOTICE</h2>
+      <p id="fatal-error-msg" class="text-sm text-white/80 leading-relaxed"></p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ============================================================================
+       * 1. DEMOSCENE STATE & CONFIGURATION
+       * ============================================================================ */
+      const ACT_META = [
+        { id: 0, title: 'ACT I // PLASMA CONDUIT', duration: 17.0 },
+        { id: 1, title: 'ACT II // NEON SINGULARITY (Ne-10)', duration: 19.0 },
+        { id: 2, title: 'ACT III // FLASH OVERDRIVE', duration: 16.0 }
+      ];
+      const TOTAL_DEMO_CYCLE = ACT_META.reduce((acc, a) => acc + a.duration, 0);
+
+      const state = {
+        playing: true,
+        hudVisible: true,
+        sceneMode: 'auto', // 'auto' | 0 | 1 | 2
+        currentAct: 0,
+        prevAct: 0,
+        transitionBlend: 0.0, // 0 = pure currentAct, >0 = cross-fade from prevAct
+        transitionFlash: 0.0,
+        demoTime: 0.0,
+        shaderTime: 0.0,
+        overdrive: 1.15,
+        speed: 1.0,
+        backend: 'INIT',
+        // Interactive camera parallax (smoothed target & current)
+        mouseTargetX: 0.0,
+        mouseTargetY: 0.0,
+        mouseX: 0.0,
+        mouseY: 0.0,
+        dragOffsetX: 0.0,
+        dragOffsetY: 0.0,
+        isDragging: false,
+        lastPointerX: 0,
+        lastPointerY: 0,
+        // Dynamic resolution scaling & FPS metrics
+        resScale: 1.0,
+        fps: 60,
+        frameCount: 0,
+        fpsAccumTime: 0,
+        lowFpsDuration: 0,
+        highFpsDuration: 0,
+        // Audio beat telemetry
+        beatPulse: 0.0,
+        bassEnergy: 0.0
+      };
+
+      /* ============================================================================
+       * 2. REAL-TIME PROCEDURAL WEB AUDIO API DEMOSCENE SYNTHESIZER (128 BPM)
+       * ============================================================================ */
+      class NeonDemosceneSynth {
+        constructor() {
+          this.ctx = null;
+          this.masterGain = null;
+          this.analyser = null;
+          this.freqData = null;
+          this.enabled = false;
+          this.bpm = 128;
+          this.stepDuration = 60 / this.bpm / 4; // 16th note = 0.1171875s
+          this.currentStep = 0;
+          this.nextNoteTime = 0;
+          this.schedulerId = null;
+          this.noiseBuffer = null;
+          this.delayNode = null;
+          this.delayFeedback = null;
+          this.delayFilter = null;
+          this.lastBeatTriggerTime = 0;
+          // Dark cyberpunk F-minor arpeggio bass patterns (MIDI notes)
+          this.bassPatterns = [
+            // Act I: Driving Plasma Conduit
+            [41, 41, 53, 41, 44, 41, 48, 51, 37, 37, 49, 37, 39, 39, 51, 46],
+            // Act II: Majestic Singularity
+            [41, 48, 53, 48, 44, 51, 56, 51, 37, 44, 49, 44, 39, 46, 51, 48],
+            // Act III: Aggressive Overdrive
+            [41, 53, 41, 56, 41, 53, 55, 48, 37, 49, 37, 51, 39, 51, 53, 56]
+          ];
+          this.padChords = [
+            [53, 60, 63, 68], // Fm7
+            [49, 56, 60, 65], // DbMaj7
+            [51, 58, 63, 67], // Eb
+            [48, 55, 60, 64]  // C tension
+          ];
+        }
+
+        midiToFreq(midi) {
+          return 440 * Math.pow(2, (midi - 69) / 12);
+        }
+
+        init() {
+          if (this.ctx) return;
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+
+          this.ctx = new AudioCtx();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.value = 0.0001;
+
+          // Subtle master limiter / compressor for punchy club/demoscene loudness
+          const comp = this.ctx.createDynamicsCompressor();
+          comp.threshold.value = -14;
+          comp.knee.value = 18;
+          comp.ratio.value = 6;
+          comp.attack.value = 0.004;
+          comp.release.value = 0.14;
+
+          this.analyser = this.ctx.createAnalyser();
+          this.analyser.fftSize = 256;
+          this.analyser.smoothingTimeConstant = 0.72;
+          this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+
+          // Stereo-like feedback delay bus for shimmering sci-fi atmosphere
+          this.delayNode = this.ctx.createDelay(1.0);
+          this.delayNode.delayTime.value = this.stepDuration * 3; // Dotted 8th delay
+          this.delayFeedback = this.ctx.createGain();
+          this.delayFeedback.gain.value = 0.36;
+          this.delayFilter = this.ctx.createBiquadFilter();
+          this.delayFilter.type = 'lowpass';
+          this.delayFilter.frequency.value = 2600;
+
+          this.delayNode.connect(this.delayFilter);
+          this.delayFilter.connect(this.delayFeedback);
+          this.delayFeedback.connect(this.delayNode);
+          this.delayFilter.connect(comp);
+
+          this.masterGain.connect(comp);
+          comp.connect(this.analyser);
+          this.analyser.connect(this.ctx.destination);
+
+          // Pre-generate crisp white noise buffer for hats/snare
+          const bufLen = Math.floor(this.ctx.sampleRate * 0.5);
+          this.noiseBuffer = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+          const data = this.noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufLen; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+        }
+
+        async toggle() {
+          try {
+            this.init();
+            if (!this.ctx) return false;
+            if (this.ctx.state === 'suspended') {
+              await this.ctx.resume();
+            }
+            this.enabled = !this.enabled;
+            const now = this.ctx.currentTime;
+            if (this.enabled) {
+              this.masterGain.gain.cancelScheduledValues(now);
+              this.masterGain.gain.setTargetAtTime(0.68, now, 0.08);
+              this.nextNoteTime = now + 0.05;
+              if (!this.schedulerId) {
+                this.schedulerId = window.setInterval(() => this.schedule(), 25);
+              }
+            } else {
+              this.masterGain.gain.cancelScheduledValues(now);
+              this.masterGain.gain.setTargetAtTime(0.0001, now, 0.06);
+              if (this.schedulerId) {
+                window.clearInterval(this.schedulerId);
+                this.schedulerId = null;
+              }
+            }
+            return this.enabled;
+          } catch (e) {
+            return false;
+          }
+        }
+
+        schedule() {
+          if (!this.enabled || !this.ctx || !state.playing) return;
+          const lookahead = 0.12;
+          while (this.nextNoteTime < this.ctx.currentTime + lookahead) {
+            this.triggerStep(this.currentStep, this.nextNoteTime);
+            this.nextNoteTime += this.stepDuration;
+            this.currentStep = (this.currentStep + 1) % 64;
+          }
+        }
+
+        triggerStep(step, time) {
+          const act = state.currentAct;
+          const step16 = step % 16;
+
+          // 1. Punchy 4-on-the-floor Kick Drum
+          if (step16 % 4 === 0) {
+            this.playKick(time, act === 2 ? 1.12 : 1.0);
+            this.lastBeatTriggerTime = time;
+          }
+
+          // 2. Crisp Cyberpunk Hi-Hat & Snare
+          if (step16 % 2 === 1) {
+            this.playHat(time, step16 % 4 === 2 ? 0.14 : 0.075);
+          }
+          if (step16 === 4 || step16 === 12) {
+            this.playSnare(time, act === 1 ? 0.16 : 0.24);
+          }
+
+          // 3. Dark Synthwave Arpeggiated Bassline
+          const pattern = this.bassPatterns[act] || this.bassPatterns[0];
+          const bassMidi = pattern[step16];
+          this.playBass(time, this.midiToFreq(bassMidi), step16 % 4 === 0 ? 0.34 : 0.26, act);
+
+          // 4. Shimmering Sci-Fi Pad Swell on every bar (16 steps)
+          if (step16 === 0) {
+            const chordIdx = Math.floor(step / 16) % this.padChords.length;
+            this.playPad(time, this.padChords[chordIdx], this.stepDuration * 15.5);
+          }
+
+          // 5. High Neon Lead Pluck accents in Act II & III
+          if ((act === 1 || act === 2) && (step16 === 0 || step16 === 3 || step16 === 6 || step16 === 10 || step16 === 14)) {
+            const chordIdx = Math.floor(step / 16) % this.padChords.length;
+            const chord = this.padChords[chordIdx];
+            const note = chord[(step16 + chordIdx) % chord.length] + (act === 2 ? 12 : 0);
+            this.playLeadPluck(time, this.midiToFreq(note));
+          }
+        }
+
+        playKick(time, intensity) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(165, time);
+          osc.frequency.exponentialRampToValueAtTime(42, time + 0.085);
+          osc.frequency.exponentialRampToValueAtTime(28, time + 0.24);
+
+          gain.gain.setValueAtTime(0.88 * intensity, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.28);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(time);
+          osc.stop(time + 0.3);
+        }
+
+        playBass(time, freq, vol, act) {
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc1.type = 'sawtooth';
+          osc2.type = 'square';
+          osc1.frequency.setValueAtTime(freq, time);
+          osc2.frequency.setValueAtTime(freq * 0.996, time);
+
+          filter.type = 'lowpass';
+          filter.Q.value = act === 2 ? 7.5 : 5.0;
+          const peakCutoff = act === 2 ? 2200 : (act === 0 ? 1650 : 1250);
+          filter.frequency.setValueAtTime(peakCutoff, time);
+          filter.frequency.exponentialRampToValueAtTime(140, time + this.stepDuration * 0.9);
+
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(vol, time + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + this.stepDuration * 0.95);
+
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+
+          osc1.start(time);
+          osc2.start(time);
+          osc1.stop(time + this.stepDuration);
+          osc2.stop(time + this.stepDuration);
+        }
+
+        playHat(time, vol) {
+          if (!this.noiseBuffer) return;
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const hp = this.ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.value = 7200;
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(vol, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+
+          src.connect(hp);
+          hp.connect(gain);
+          gain.connect(this.masterGain);
+          src.start(time);
+          src.stop(time + 0.06);
+        }
+
+        playSnare(time, vol) {
+          if (!this.noiseBuffer) return;
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+          const bp = this.ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = 1850;
+          bp.Q.value = 1.2;
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(vol, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+
+          src.connect(bp);
+          bp.connect(gain);
+          gain.connect(this.masterGain);
+          gain.connect(this.delayNode);
+          src.start(time);
+          src.stop(time + 0.18);
+        }
+
+        playPad(time, notes, duration) {
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(520, time);
+          filter.frequency.exponentialRampToValueAtTime(2100, time + duration * 0.45);
+          filter.frequency.exponentialRampToValueAtTime(680, time + duration);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(0.095, time + 0.35);
+          gain.gain.setValueAtTime(0.095, time + duration - 0.35);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          gain.connect(this.delayNode);
+
+          notes.forEach((midi, idx) => {
+            const osc = this.ctx.createOscillator();
+            osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+            const detune = (idx - 1.5) * 6;
+            osc.frequency.setValueAtTime(this.midiToFreq(midi), time);
+            osc.detune.setValueAtTime(detune, time);
+            osc.connect(filter);
+            osc.start(time);
+            osc.stop(time + duration + 0.05);
+          });
+        }
+
+        playLeadPluck(time, freq) {
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, time);
+
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(freq * 3.0, time);
+          filter.Q.value = 3.2;
+
+          gain.gain.setValueAtTime(0.001, time);
+          gain.gain.linearRampToValueAtTime(0.11, time + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          gain.connect(this.delayNode);
+
+          osc.start(time);
+          osc.stop(time + 0.25);
+        }
+
+        /**
+         * Returns real-time { beatPulse, bassEnergy, eqBars }
+         * Falls back to a tight synthetic 128 BPM pulse when muted.
+         */
+        sampleEnergy(demoTime) {
+          const beatFreq = this.bpm / 60.0; // 2.1333 Hz
+          const beatPhase = (demoTime * beatFreq) % 1.0;
+          const synthKick = Math.pow(1.0 - beatPhase, 4.2);
+          const synthSub = 0.35 + 0.65 * Math.pow(Math.max(0, Math.sin(demoTime * Math.PI * beatFreq)), 2.0);
+
+          if (!this.enabled || !this.analyser || !this.ctx || !state.playing) {
+            return {
+              beatPulse: synthKick,
+              bassEnergy: synthSub * 0.78,
+              bars: [0.2, 0.3, 0.2, 0.3]
+            };
+          }
+
+          this.analyser.getByteFrequencyData(this.freqData);
+          let lowSum = 0;
+          for (let i = 0; i < 8; i++) lowSum += this.freqData[i];
+          const realBass = Math.min(1.0, (lowSum / (8 * 255)) * 1.38);
+
+          const sinceKick = Math.max(0, this.ctx.currentTime - this.lastBeatTriggerTime);
+          const realKick = Math.exp(-sinceKick * 9.5);
+
+          const b0 = this.freqData[2] / 255;
+          const b1 = this.freqData[6] / 255;
+          const b2 = this.freqData[14] / 255;
+          const b3 = this.freqData[28] / 255;
+
+          return {
+            beatPulse: Math.max(realKick, realBass * 0.82),
+            bassEnergy: Math.max(realBass, synthSub * 0.35),
+            bars: [b0, b1, b2, b3]
+          };
+        }
+      }
+
+      const synth = new NeonDemosceneSynth();
+
+      /* ============================================================================
+       * 3. WEBGPU WGSL SHADERS (PASS 1: 3D SDF RAYMARCHER | PASS 2: CINEMATIC POST)
+       *    All Uniform structs are strictly 16-byte aligned (vec4<f32> fields).
+       * ============================================================================ */
+
+      const WGSL_SCENE_SHADER = /* wgsl */ `
+struct Uniforms {
+  uResTime   : vec4<f32>, // x: width, y: height, z: shaderTime, w: demoTime
+  uAudioCtrl : vec4<f32>, // x: beatPulse, y: bassEnergy, z: overdrive, w: speed
+  uCamAct    : vec4<f32>, // x: mouseX, y: mouseY, z: currentAct (0/1/2), w: prevAct (0/1/2)
+  uTrans     : vec4<f32>, // x: transitionBlend (0..1), y: transitionFlash (0..1), z: aspect, w: frame
+};
+
+@group(0) @binding(0) var<uniform> u: Uniforms;
+
+struct VSOut {
+  @builtin(position) pos: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
+  var verts = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 3.0, -1.0),
+    vec2<f32>(-1.0,  3.0)
+  );
+  let p = verts[vid];
+  var out: VSOut;
+  out.pos = vec4<f32>(p, 0.0, 1.0);
+  out.uv = p * 0.5 + 0.5;
+  return out;
+}
+
+// --- WGSL-Safe Math Helpers ---
+fn fmod(x: f32, y: f32) -> f32 {
+  return x - y * floor(x / y);
+}
+
+fn fmod3(x: vec3<f32>, y: f32) -> vec3<f32> {
+  return x - y * floor(x / y);
+}
+
+fn rot2(a: f32) -> mat2x2<f32> {
+  let c = cos(a);
+  let s = sin(a);
+  return mat2x2<f32>(c, s, -s, c);
+}
+
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn smax(a: f32, b: f32, k: f32) -> f32 {
+  return -smin(-a, -b, k);
+}
+
+fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
+  let q = abs(p) - b;
+  return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
+  let q = vec2<f32>(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}
+
+fn sdOctahedron(p_in: vec3<f32>, s: f32) -> f32 {
+  let p = abs(p_in);
+  return (p.x + p.y + p.z - s) * 0.57735027;
+}
+
+// Gemini + Neon (Ne-10) Color Palette
+const COL_VOID    : vec3<f32> = vec3<f32>(0.010, 0.007, 0.024);
+const COL_CRIMSON : vec3<f32> = vec3<f32>(1.000, 0.118, 0.420); // #ff1e6b
+const COL_CYAN    : vec3<f32> = vec3<f32>(0.000, 0.961, 1.000); // #00f5ff
+const COL_VIOLET  : vec3<f32> = vec3<f32>(0.482, 0.184, 1.000); // #7b2fff
+const COL_PLASMA  : vec3<f32> = vec3<f32>(1.000, 0.482, 0.000); // #ff7b00
+const COL_CORE    : vec3<f32> = vec3<f32>(1.000, 0.930, 0.840);
+
+fn neonPalette(t: f32) -> vec3<f32> {
+  let c1 = mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(t));
+  let c2 = mix(COL_VIOLET, COL_PLASMA, 0.5 + 0.5 * cos(t * 0.7 + 1.2));
+  return mix(c1, c2, 0.35 + 0.25 * sin(t * 1.7));
+}
+
+// =========================================================================
+// ACT I — "PLASMA CONDUIT" (Twisting Octagonal/Hexagonal Sci-Fi Warp Tunnel)
+// =========================================================================
+fn conduitPath(z: f32) -> vec2<f32> {
+  return vec2<f32>(
+    sin(z * 0.16) * 2.1 + cos(z * 0.075) * 1.1,
+    cos(z * 0.13) * 1.5 + sin(z * 0.065) * 0.8
+  );
+}
+
+struct HitInfo {
+  d: f32,
+  mat: f32,      // 0: obsidian armor, 1: neon emissive, 2: mirror floor, 3: crystal star
+  glowDist: f32,
+  glowCol: vec3<f32>,
+};
+
+fn mapAct1(p_in: vec3<f32>, t: f32, beat: f32) -> HitInfo {
+  var p = p_in;
+  let pathXY = conduitPath(p.z);
+  p.x = p.x - pathXY.x;
+  p.y = p.y - pathXY.y;
+
+  // Dynamic tunnel twist
+  let twist = p.z * 0.14 + sin(t * 0.45) * 0.6;
+  let rxy = rot2(twist) * p.xy;
+  p.x = rxy.x;
+  p.y = rxy.y;
+
+  // Octagonal hollow tunnel cross-section
+  let ap = abs(p.xy);
+  let oct = max(max(ap.x, ap.y), (ap.x + ap.y) * 0.70710678);
+  let tunnelRadius = 3.15 + 0.16 * sin(p.z * 0.45 - t * 3.0);
+  var dWall = tunnelRadius - oct;
+
+  // Armored panel grooves along Z and angular sectors
+  let zCell = fmod(p.z + 1.2, 2.4) - 1.2;
+  let groove = abs(zCell) - 0.06;
+  let angle = atan2(p.y, p.x);
+  let angGroove = abs(sin(angle * 4.0)) - 0.04;
+  dWall = dWall + 0.055 * smoothstep(0.06, 0.0, groove) + 0.035 * smoothstep(0.05, 0.0, angGroove);
+
+  // Periodic Neon Ribs lining the octagonal conduit
+  let ribZ = fmod(p.z + 1.2, 2.4) - 1.2;
+  let ribRing = length(vec2<f32>(oct - (tunnelRadius - 0.14), ribZ)) - (0.065 + 0.025 * beat);
+
+  // Spiraling Kinetic Energy Beams (4 high-speed plasma rails)
+  let beamAngle = fmod(angle + 3.14159265 + p.z * 0.18 - t * 1.4, 1.5707963) - 0.78539816;
+  let rad = length(p.xy);
+  let beamPos = vec2<f32>(rad - 2.35, beamAngle * 2.35);
+  let dBeams = length(beamPos) - 0.045;
+
+  // Floating Warp Speed Gates every 9.6 units
+  let gateZ = fmod(p.z + 4.8, 9.6) - 4.8;
+  let gRot = rot2(t * 1.2 + floor((p.z + 4.8) / 9.6) * 0.785) * p.xy;
+  let ga = abs(gRot);
+  let gateOct = max(max(ga.x, ga.y), (ga.x + ga.y) * 0.70710678);
+  let dGate = max(abs(gateOct - 1.55) - 0.055, abs(gateZ) - 0.08);
+
+  // Combine neon emitters
+  let dNeon = min(ribRing, min(dBeams, dGate));
+
+  // Color wave traveling down the conduit
+  let wave = sin(p.z * 0.35 - t * 6.5);
+  var gCol = mix(COL_CYAN, COL_CRIMSON, smoothstep(-0.35, 0.35, wave));
+  if (dGate < ribRing && dGate < dBeams) {
+    gCol = mix(COL_PLASMA, COL_CORE, 0.35 + 0.45 * beat);
+  } else if (dBeams < ribRing) {
+    gCol = mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * sin(p.z * 0.6 - t * 9.0));
+  }
+
+  var res: HitInfo;
+  if (dNeon < dWall) {
+    res.d = dNeon;
+    res.mat = 1.0;
+  } else {
+    res.d = dWall;
+    res.mat = 0.0;
+  }
+  res.glowDist = dNeon;
+  res.glowCol = gCol;
+  return res;
+}
+
+// =========================================================================
+// ACT II — "NEON SINGULARITY (Ne-10)" (3D Gemini 4-Star + Gyro Rings + Floor)
+// =========================================================================
+fn sdGeminiStar(p_in: vec3<f32>, beat: f32) -> f32 {
+  let scale = 1.0 + 0.09 * beat;
+  let p = p_in / scale;
+  let q = abs(p);
+  // Crisp crystalline diamond base elongated along X & Y, sleek depth in Z
+  let dOct = (q.x * 0.92 + q.y * 0.92 + q.z * 1.52 - 1.58) * 0.54;
+  // Carve 4 iconic Gemini sweeping concave hyperbolic arcs in the diagonal quadrants
+  let dScoop = length(q.xy - vec2<f32>(1.24, 1.24)) - 1.02;
+  // Also subtle Z-pinch scoops for sculptural 3D crystalline facets
+  let dScoopXZ = length(vec2<f32>(q.x, q.z * 1.35) - vec2<f32>(1.28, 1.15)) - 0.96;
+  let dScoopYZ = length(vec2<f32>(q.y, q.z * 1.35) - vec2<f32>(1.28, 1.15)) - 0.96;
+  let carved = smax(dOct, -dScoop, 0.06);
+  let carved3D = smax(carved, -min(dScoopXZ, dScoopYZ), 0.08);
+  return carved3D * scale;
+}
+
+fn mapAct2(p: vec3<f32>, t: f32, beat: f32) -> HitInfo {
+  // Glossy Mirror Obsidian Floor at y = -2.35
+  let dFloor = p.y + 2.35;
+
+  // 1. Central Morphing 3D Gemini 4-Pointed Star Core
+  var sp = p - vec3<f32>(0.0, 0.35 + 0.14 * sin(t * 1.7), 0.0);
+  let sy = rot2(t * 0.65) * sp.xz;
+  sp.x = sy.x;
+  sp.z = sy.y;
+  let sx = rot2(sin(t * 0.9) * 0.28) * sp.yz;
+  sp.y = sx.x;
+  sp.z = sx.y;
+
+  let dStar = sdGeminiStar(sp, beat);
+  let dInnerCore = length(sp) - (0.38 + 0.14 * beat);
+
+  // 2. Three Counter-Rotating Gyroscopic Neon Plasma Rings
+  let centerP = p - vec3<f32>(0.0, 0.35, 0.0);
+
+  var r1 = centerP;
+  let r1a = rot2(t * 0.95) * r1.xy; r1.x = r1a.x; r1.y = r1a.y;
+  let r1b = rot2(0.75 + t * 0.45) * r1.yz; r1.y = r1b.x; r1.z = r1b.y;
+  let dRing1 = sdTorus(r1, vec2<f32>(2.35, 0.048 + 0.018 * beat));
+
+  var r2 = centerP;
+  let r2a = rot2(-t * 1.25) * r2.xz; r2.x = r2a.x; r2.z = r2a.y;
+  let r2b = rot2(-0.85 + sin(t * 0.6) * 0.5) * r2.xy; r2.x = r2b.x; r2.y = r2b.y;
+  let dRing2 = sdTorus(r2, vec2<f32>(2.95, 0.042 + 0.015 * beat));
+
+  var r3 = centerP;
+  let r3a = rot2(t * 0.55) * r3.yz; r3.y = r3a.x; r3.z = r3a.y;
+  let r3b = rot2(1.1 - t * 0.7) * r3.xz; r3.x = r3b.x; r3.z = r3b.y;
+  let dRing3 = sdTorus(r3, vec2<f32>(3.55, 0.036 + 0.014 * beat));
+
+  // 3. Polar Array of 8 Floating Chamfered Obsidian Monoliths with Neon Slits
+  let ang = atan2(p.z, p.x);
+  let sector = 6.2831853 / 8.0;
+  let sectorId = floor((ang + sector * 0.5) / sector);
+  let localAng = fmod(ang + sector * 0.5, sector) - sector * 0.5;
+  let radXZ = length(p.xz);
+  let bob = sin(t * 1.15 + sectorId * 1.35) * 0.35;
+  let mp = vec3<f32>(cos(localAng) * radXZ - 6.9, p.y - (0.3 + bob), sin(localAng) * radXZ);
+  // Chamfered monolith body
+  let dMono = sdBox(mp, vec3<f32>(0.55, 2.55, 0.55)) - 0.08;
+  // Glowing neon energy slit inlaid along the inner face of each monolith
+  let dMonoSlit = sdBox(mp - vec3<f32>(-0.56, 0.0, 0.0), vec3<f32>(0.05, 2.1, 0.065));
+
+  let dRings = min(dRing1, min(dRing2, dRing3));
+  let dNeon = min(dInnerCore, min(dRings, dMonoSlit));
+
+  // Select emissive color by closest neon element
+  var gCol = COL_CYAN;
+  if (dInnerCore < dRings && dInnerCore < dMonoSlit) {
+    gCol = mix(COL_PLASMA, COL_CORE, 0.55 + 0.35 * beat);
+  } else if (dRing1 <= dRing2 && dRing1 <= dRing3 && dRing1 <= dMonoSlit) {
+    gCol = COL_CYAN;
+  } else if (dRing2 <= dRing3 && dRing2 <= dMonoSlit) {
+    gCol = COL_CRIMSON;
+  } else if (dRing3 <= dMonoSlit) {
+    gCol = COL_VIOLET;
+  } else {
+    gCol = mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(sectorId * 1.57 + t * 1.5));
+  }
+
+  // Also add luminous edge glow right along the Gemini star facets
+  let glowDist = min(dNeon, max(dStar, 0.02) * 1.35);
+  if (dStar < dNeon) {
+    gCol = mix(gCol, mix(COL_PLASMA, COL_CRIMSON, 0.45), 0.5);
+  }
+
+  var res: HitInfo;
+  res.d = dFloor;
+  res.mat = 2.0;
+  if (dMono < res.d) {
+    res.d = dMono;
+    res.mat = 0.0;
+  }
+  if (dStar < res.d) {
+    res.d = dStar;
+    res.mat = 3.0;
+  }
+  if (dNeon < res.d) {
+    res.d = dNeon;
+    res.mat = 1.0;
+  }
+  res.glowDist = glowDist;
+  res.glowCol = gCol;
+  return res;
+}
+
+// =========================================================================
+// ACT III — "FLASH OVERDRIVE" (Folding 3D KIFS/Menger Fractal + Shockwaves)
+// =========================================================================
+fn mapAct3(p_in: vec3<f32>, t: f32, beat: f32) -> HitInfo {
+  var p = p_in;
+
+  // Keep a clear high-speed flight corridor around the camera centerline
+  let camPath = vec2<f32>(sin(p.z * 0.22) * 0.9, cos(p.z * 0.19) * 0.9);
+  let corridorDist = 1.15 - length(p.xy - camPath);
+
+  // Beat-synced 3D expanding shockwave shell ahead of camera
+  let waveZ = floor(p.z / 12.0) * 12.0 + 6.0;
+  let waveOrigin = vec3<f32>(sin(waveZ * 0.22) * 0.9, cos(waveZ * 0.19) * 0.9, waveZ);
+  let waveRad = fmod(t * 4.8, 5.5);
+  let dShock = abs(length(p - waveOrigin) - waveRad) - (0.045 + 0.04 * beat);
+
+  // Repeating 3D KIFS / Menger-style fractal lattice
+  var q = fmod3(p + 3.0, 6.0) - 3.0;
+  var scale = 1.0;
+  var trap = 1e5;
+
+  let foldAngle = 0.35 + 0.16 * sin(t * 0.6) + 0.08 * beat;
+  let rFold1 = rot2(foldAngle);
+  let rFold2 = rot2(-foldAngle * 0.7 + 0.4);
+
+  for (var i: i32 = 0; i < 4; i = i + 1) {
+    q = abs(q);
+    if (q.x < q.y) { let tmp = q.x; q.x = q.y; q.y = tmp; }
+    if (q.x < q.z) { let tmp = q.x; q.x = q.z; q.z = tmp; }
+    if (q.y < q.z) { let tmp = q.y; q.y = q.z; q.z = tmp; }
+
+    let r1 = rFold1 * q.xy;
+    q.x = r1.x; q.y = r1.y;
+
+    q = q * 1.92 - vec3<f32>(1.78, 1.42, 0.95);
+    if (q.z < -0.5 * 1.92) {
+      q.z = q.z + 1.92;
+    }
+
+    let r2 = rFold2 * q.xz;
+    q.x = r2.x; q.z = r2.y;
+
+    scale = scale * 1.92;
+    trap = min(trap, length(q.xy));
+  }
+
+  let dFractalRaw = (sdBox(q, vec3<f32>(0.95, 0.95, 0.95)) - 0.08) / scale;
+  // Carve smooth flight corridor through the fractal
+  let dFractal = smax(dFractalRaw, corridorDist, 0.25);
+
+  // Neon circuit veins extracted from orbit trap + shockwave ring
+  let dVeins = max(dFractal, abs(trap - 0.35) * 0.14);
+  let dNeon = min(dShock, dVeins + 0.015);
+
+  let colorIdx = trap * 2.4 + p.z * 0.22 - t * 2.5;
+  var gCol = neonPalette(colorIdx);
+  if (dShock < dVeins) {
+    gCol = mix(COL_PLASMA, COL_CORE, 0.55 + 0.35 * beat);
+  }
+
+  var res: HitInfo;
+  if (dShock < dFractal) {
+    res.d = dShock;
+    res.mat = 1.0;
+  } else {
+    res.d = dFractal;
+    res.mat = 0.0;
+  }
+  res.glowDist = dNeon;
+  res.glowCol = gCol;
+  return res;
+}
+
+// Unified scene mapper & normal estimator
+fn mapScene(actId: i32, p: vec3<f32>, t: f32, beat: f32) -> HitInfo {
+  if (actId == 0) {
+    return mapAct1(p, t, beat);
+  } else if (actId == 1) {
+    return mapAct2(p, t, beat);
+  }
+  return mapAct3(p, t, beat);
+}
+
+fn calcNormal(actId: i32, p: vec3<f32>, t: f32, beat: f32) -> vec3<f32> {
+  let e = 0.0025;
+  let k = vec2<f32>(1.0, -1.0);
+  let n = k.xyy * mapScene(actId, p + k.xyy * e, t, beat).d
+        + k.yyx * mapScene(actId, p + k.yyx * e, t, beat).d
+        + k.yxy * mapScene(actId, p + k.yxy * e, t, beat).d
+        + k.xxx * mapScene(actId, p + k.xxx * e, t, beat).d;
+  return normalize(n + vec3<f32>(1e-5));
+}
+
+// =========================================================================
+// CAMERA SETUP & FULL RAYMARCH RENDERER FOR A GIVEN ACT
+// =========================================================================
+fn renderAct(actId: i32, uv: vec2<f32>, t: f32, beat: f32, bass: f32, overdrive: f32) -> vec3<f32> {
+  let aspect = u.uTrans.z;
+  var pUV = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+
+  let mx = u.uCamAct.x;
+  let my = u.uCamAct.y;
+
+  // Beat-reactive micro camera shake
+  let shakeAmp = (0.008 + 0.014 * f32(actId == 2)) * beat * overdrive;
+  pUV = pUV + vec2<f32>(sin(t * 57.0), cos(t * 63.0)) * shakeAmp;
+
+  var ro = vec3<f32>(0.0);
+  var ta = vec3<f32>(0.0, 0.0, 1.0);
+  var roll = 0.0;
+  var fov = 1.35;
+
+  if (actId == 0) {
+    // Act I: High-speed flight down twisting conduit
+    let zPos = t * 9.5;
+    let c0 = conduitPath(zPos);
+    let c1 = conduitPath(zPos + 3.2);
+    ro = vec3<f32>(c0.x + mx * 0.75, c0.y + my * 0.65, zPos);
+    ta = vec3<f32>(c1.x + mx * 1.4, c1.y + my * 1.1, zPos + 3.2);
+    roll = sin(t * 0.55) * 0.48 - mx * 0.35;
+    fov = 1.22 - 0.14 * beat;
+  } else if (actId == 1) {
+    // Act II: Sweeping architectural orbit around the Gemini 4-Pointed Star
+    let orbitAng = t * 0.34 + mx * 1.65;
+    let orbitRad = 6.35 + sin(t * 0.42) * 1.15 - beat * 0.25;
+    let camY = 0.55 + sin(t * 0.31) * 1.25 + my * 1.85;
+    ro = vec3<f32>(cos(orbitAng) * orbitRad, max(-1.75, camY), sin(orbitAng) * orbitRad);
+    ta = vec3<f32>(0.0, 0.25, 0.0);
+    roll = sin(t * 0.28) * 0.08 - mx * 0.1;
+    fov = 1.45 - 0.08 * beat;
+  } else {
+    // Act III: Aggressive kinetic rolls & dolly zoom through KIFS fractal
+    let zPos = t * 6.8;
+    let c0 = vec2<f32>(sin(zPos * 0.22) * 0.9, cos(zPos * 0.19) * 0.9);
+    let c1 = vec2<f32>(sin((zPos + 2.5) * 0.22) * 0.9, cos((zPos + 2.5) * 0.19) * 0.9);
+    ro = vec3<f32>(c0.x + mx * 0.45, c0.y + my * 0.45, zPos);
+    ta = vec3<f32>(c1.x + mx * 1.2, c1.y + my * 1.2, zPos + 2.5);
+    roll = t * 0.42 + sin(t * 1.3) * 0.45 - mx * 0.5;
+    fov = 1.08 + 0.22 * sin(t * 0.9) - 0.18 * beat;
+  }
+
+  // Camera Orthonormal Basis
+  let cw = normalize(ta - ro);
+  let upRef = vec3<f32>(sin(roll), cos(roll), 0.0);
+  let cu = normalize(cross(cw, upRef));
+  let cv = normalize(cross(cu, cw));
+  let rd = normalize(cu * pUV.x + cv * pUV.y + cw * fov);
+
+  // Primary Raymarch Loop + Volumetric Neon Glow Accumulation
+  var dist = 0.0;
+  var hitMat = -1.0;
+  var hitPos = ro;
+  var glowAccum = vec3<f32>(0.0);
+  let maxDist = 48.0;
+
+  for (var i: i32 = 0; i < 82; i = i + 1) {
+    let p = ro + rd * dist;
+    let h = mapScene(actId, p, t, beat);
+
+    // Volumetric neon glow accumulation around emissive fields
+    let gStep = 0.011 / (0.028 + h.glowDist * h.glowDist * 4.2);
+    glowAccum = glowAccum + h.glowCol * gStep * (0.75 + 0.55 * beat);
+
+    if (h.d < 0.0022) {
+      hitMat = h.mat;
+      hitPos = p;
+      break;
+    }
+    dist = dist + h.d * 0.88;
+    if (dist > maxDist) {
+      break;
+    }
+  }
+
+  var col = COL_VOID;
+  // Subtle atmospheric nebula backdrop gradient
+  col = col + mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * rd.y) * 0.045;
+
+  if (hitMat >= 0.0) {
+    let n = calcNormal(actId, hitPos, t, beat);
+    let viewDir = -rd;
+    let fresnel = pow(max(1.0 - max(dot(n, viewDir), 0.0), 0.0), 3.4);
+    let refl = reflect(rd, n);
+
+    if (hitMat == 1.0) {
+      // Pure Neon Plasma Emitter Surface
+      let hInfo = mapScene(actId, hitPos, t, beat);
+      col = mix(hInfo.glowCol, COL_CORE, 0.45 + 0.35 * fresnel) * (2.4 + 1.4 * beat);
+    } else if (hitMat == 3.0) {
+      // Act II: Crystalline 3D Gemini 4-Pointed Star
+      let l1 = normalize(vec3<f32>(0.6, 0.8, 0.5));
+      let l2 = normalize(vec3<f32>(-0.7, -0.3, -0.6));
+      let spec1 = pow(max(dot(refl, l1), 0.0), 36.0);
+      let spec2 = pow(max(dot(refl, l2), 0.0), 22.0);
+      let corePulse = mix(COL_PLASMA, COL_CORE, 0.4 + 0.5 * beat);
+      let rimCol = mix(COL_CYAN, COL_CRIMSON, 0.5 + 0.5 * sin(hitPos.y * 2.5 - t * 2.0));
+      // Translucent fiery plasma core bleeding through dark crystal facets
+      let coreGlow = exp(-length(hitPos - vec3<f32>(0.0, 0.35, 0.0)) * 1.15);
+      col = vec3<f32>(0.05, 0.02, 0.10)
+          + corePulse * coreGlow * (1.85 + 1.3 * beat)
+          + rimCol * fresnel * (2.6 + 1.2 * bass)
+          + COL_CORE * spec1 * 1.8
+          + COL_CYAN * spec2 * 1.1;
+    } else if (hitMat == 2.0) {
+      // Act II: Glossy Mirror-Like Cyber Grid Obsidian Floor with Real 1-Bounce Reflection!
+      let gridXZ = abs(fract(hitPos.xz * 0.65 - 0.5) - 0.5) / 0.65;
+      let gridLine = smoothstep(0.032, 0.004, min(gridXZ.x, gridXZ.y));
+      let radFloor = length(hitPos.xz);
+      let pulseRing = smoothstep(0.18, 0.0, abs(fmod(radFloor - t * 3.8, 5.2) - 2.6));
+      let gridCol = mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * sin(radFloor * 0.45 - t * 2.2));
+      let floorEmissive = gridCol * gridLine * (0.55 + 0.9 * pulseRing * (0.6 + beat)) * exp(-radFloor * 0.085);
+
+      // Secondary raymarch bounce to reflect the Gemini Star, Gyro Rings & Monoliths!
+      var rDist = 0.06;
+      var reflGlow = vec3<f32>(0.0);
+      var reflHitCol = COL_VOID;
+      for (var j: i32 = 0; j < 30; j = j + 1) {
+        let rp = hitPos + n * 0.02 + refl * rDist;
+        let rh = mapAct2(rp, t, beat);
+        reflGlow = reflGlow + rh.glowCol * (0.015 / (0.035 + rh.glowDist * rh.glowDist * 3.8));
+        if (rh.d < 0.012) {
+          if (rh.mat == 1.0 || rh.mat == 3.0) {
+            reflHitCol = mix(rh.glowCol, COL_CORE, 0.35) * 1.8;
+          } else {
+            reflHitCol = vec3<f32>(0.03, 0.02, 0.06);
+          }
+          break;
+        }
+        rDist = rDist + rh.d * 1.1;
+        if (rDist > 22.0) { break; }
+      }
+
+      let mirrorStrength = 0.35 + 0.62 * fresnel;
+      col = vec3<f32>(0.012, 0.010, 0.024) + floorEmissive + (reflHitCol + reflGlow * 0.68) * mirrorStrength;
+    } else {
+      // Dark Reflective Obsidian Tech Armor (Tunnel Walls / Monoliths / Fractal)
+      let lDir = normalize(vec3<f32>(0.3, 0.7, -0.5));
+      let diff = max(dot(n, lDir), 0.0);
+      let spec = pow(max(dot(refl, lDir), 0.0), 28.0);
+      let bounceCol = neonPalette(hitPos.z * 0.25 - t * 1.5);
+      let rimCol = mix(COL_CYAN, COL_CRIMSON, 0.5 + 0.5 * sin(hitPos.z * 0.3 + hitPos.y));
+      col = vec3<f32>(0.020, 0.016, 0.042)
+          + bounceCol * diff * 0.22
+          + rimCol * fresnel * (1.15 + 0.85 * bass)
+          + COL_CORE * spec * 0.65;
+
+      // Act III neon edge highlights on fractal ridges
+      if (actId == 2) {
+        let edgePulse = smoothstep(0.35, 0.95, abs(sin(hitPos.z * 1.2 - t * 5.0)));
+        col = col + mix(COL_CRIMSON, COL_CYAN, edgePulse) * fresnel * (0.8 + beat);
+      }
+    }
+
+    // Volumetric Distance Fog into Deep Cyber Plasma Haze
+    let fogAmount = 1.0 - exp(-dist * dist * (select(0.0022, 0.0034, actId == 2)));
+    let fogCol = mix(COL_VOID, mix(COL_VIOLET, COL_CYAN, 0.35) * 0.22, 0.45 + 0.35 * bass);
+    col = mix(col, fogCol, clamp(fogAmount, 0.0, 1.0));
+  }
+
+  // Add accumulated volumetric neon glow
+  col = col + glowAccum * (0.48 * overdrive);
+
+  // Act III Kaleidoscopic Starburst Flare on heavy beats
+  if (actId == 2) {
+    let r = length(pUV);
+    let ang = atan2(pUV.y, pUV.x);
+    let rays = pow(max(0.0, cos(ang * 6.0 + t * 2.2)), 6.0);
+    let flare = exp(-r * 2.8) * (0.28 + 0.65 * beat) * overdrive;
+    col = col + mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(ang * 3.0 - t)) * rays * flare;
+    col = col + COL_PLASMA * exp(-r * 6.5) * 0.45 * beat * overdrive;
+  }
+
+  // Act I Warp-Speed Motion Streaks near peripheral viewport
+  if (actId == 0) {
+    let r = length(pUV);
+    let ang = atan2(pUV.y, pUV.x);
+    let streak = pow(max(0.0, sin(ang * 24.0 + sin(t * 2.0))), 14.0) * smoothstep(0.45, 1.45, r);
+    let streakPulse = 0.5 + 0.5 * sin(ang * 7.0 - t * 12.0);
+    col = col + mix(COL_CYAN, COL_CRIMSON, streakPulse) * streak * (0.22 + 0.45 * beat) * overdrive;
+  }
+
+  return col;
+}
+
+@fragment
+fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
+  let t = u.uResTime.z;
+  let beat = u.uAudioCtrl.x;
+  let bass = u.uAudioCtrl.y;
+  let overdrive = u.uAudioCtrl.z;
+
+  let curAct = i32(round(u.uCamAct.z));
+  let prvAct = i32(round(u.uCamAct.w));
+  let blend = u.uTrans.x;
+  let flash = u.uTrans.y;
+
+  // Radial hyperspace warp distortion during act transitions
+  var uv = in.uv;
+  if (flash > 0.005) {
+    let dir = uv - 0.5;
+    uv = 0.5 + dir * (1.0 - flash * 0.22 * length(dir));
+  }
+
+  var col = renderAct(curAct, uv, t, beat, bass, overdrive);
+  if (blend > 0.01 && prvAct != curAct) {
+    let prevCol = renderAct(prvAct, uv, t, beat, bass, overdrive);
+    col = mix(col, prevCol, blend);
+  }
+
+  // Soft-HDR reversible compression into RGBA8 render target (preserves HDR range up to ~20x)
+  let hdrEncoded = col / (1.0 + col * 0.45);
+  return vec4<f32>(clamp(hdrEncoded, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
+}
+`;
+
+      const WGSL_POST_SHADER = /* wgsl */ `
+struct Uniforms {
+  uResTime   : vec4<f32>, // x: width, y: height, z: shaderTime, w: demoTime
+  uAudioCtrl : vec4<f32>, // x: beatPulse, y: bassEnergy, z: overdrive, w: speed
+  uCamAct    : vec4<f32>,
+  uTrans     : vec4<f32>, // x: blend, y: transitionFlash, z: aspect, w: frame
+};
+
+@group(0) @binding(0) var<uniform> u: Uniforms;
+@group(0) @binding(1) var sceneTex: texture_2d<f32>;
+@group(0) @binding(2) var sceneSampler: sampler;
+
+struct VSOut {
+  @builtin(position) pos: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
+  var verts = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 3.0, -1.0),
+    vec2<f32>(-1.0,  3.0)
+  );
+  let p = verts[vid];
+  var out: VSOut;
+  out.pos = vec4<f32>(p, 0.0, 1.0);
+  // Flip Y for WebGPU texture coordinate convention (0,0 at top-left)
+  out.uv = vec2<f32>(p.x * 0.5 + 0.5, 0.5 - p.y * 0.5);
+  return out;
+}
+
+fn decodeHDR(c: vec3<f32>) -> vec3<f32> {
+  return c / max(vec3<f32>(1.0) - c * 0.45, vec3<f32>(0.04));
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@fragment
+fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
+  let uv = in.uv;
+  let t = u.uResTime.z;
+  let beat = u.uAudioCtrl.x;
+  let bass = u.uAudioCtrl.y;
+  let overdrive = u.uAudioCtrl.z;
+  let flash = u.uTrans.y;
+
+  let centerOffset = uv - vec2<f32>(0.5);
+  let distFromCenter = length(centerOffset);
+
+  // Beat-reactive Radial RGB Chromatic Aberration
+  let caAmount = (0.0022 + 0.0085 * beat * overdrive + 0.024 * flash) * distFromCenter;
+  let caDir = normalize(centerOffset + vec2<f32>(1e-5)) * caAmount;
+
+  let rS = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv + caDir, vec2<f32>(0.001), vec2<f32>(0.999))).rgb).r;
+  let gS = decodeHDR(textureSample(sceneTex, sceneSampler, uv).rgb).g;
+  let bS = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv - caDir, vec2<f32>(0.001), vec2<f32>(0.999))).rgb).b;
+  var col = vec3<f32>(rS, gS, bS);
+
+  // Fast Anamorphic Neon Bloom & Star Halo (8-tap radial + wide horizontal streak)
+  let px = vec2<f32>(1.0 / max(u.uResTime.x, 1.0), 1.0 / max(u.uResTime.y, 1.0));
+  var bloom = vec3<f32>(0.0);
+  let b1 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv + vec2<f32>(px.x * 5.0, 0.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b2 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv - vec2<f32>(px.x * 5.0, 0.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b3 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv + vec2<f32>(px.x * 13.0, 0.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b4 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv - vec2<f32>(px.x * 13.0, 0.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b5 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv + vec2<f32>(0.0, px.y * 5.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b6 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv - vec2<f32>(0.0, px.y * 5.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b7 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv + vec2<f32>(px.x * 8.0, px.y * 8.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+  let b8 = decodeHDR(textureSample(sceneTex, sceneSampler, clamp(uv - vec2<f32>(px.x * 8.0, px.y * 8.0), vec2<f32>(0.001), vec2<f32>(0.999))).rgb);
+
+  bloom = (b1 + b2 + b5 + b6) * 0.14 + (b3 + b4) * 0.16 + (b7 + b8) * 0.08;
+  let bloomThreshold = max(bloom - vec3<f32>(0.42), vec3<f32>(0.0));
+  col = col + bloomThreshold * (0.42 + 0.25 * beat) * overdrive;
+
+  // Transition Plasma Shockwave Flash
+  if (flash > 0.001) {
+    let flashCol = mix(vec3<f32>(0.0, 0.96, 1.0), vec3<f32>(1.0, 0.25, 0.55), 0.5 + 0.5 * sin(t * 9.0));
+    col = col + flashCol * flash * 1.45;
+  }
+
+  // ACES Filmic Tone Mapping
+  col = acesFilm(col * (0.95 + 0.15 * bass));
+
+  // Subtle Sci-Fi Scanlines & Micro Film Grain
+  let scanline = 0.965 + 0.035 * sin(uv.y * u.uResTime.y * 1.55);
+  col = col * scanline;
+
+  let grain = fract(sin(dot(uv * vec2<f32>(12.9898, 78.233) + t * 0.01, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+  col = col + (grain - 0.5) * 0.018;
+
+  // Cinematic Vignette
+  let vig = smoothstep(1.18, 0.28, distFromCenter * 1.25);
+  col = col * (0.58 + 0.42 * vig);
+
+  // Final Gamma Lift for Crisp OLED Neon Contrast
+  col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.94));
+  return vec4<f32>(col, 1.0);
+}
+`;
+
+      /* ============================================================================
+       * 4. WEBGL2 GLSL ES 3.00 FALLBACK SHADERS (IDENTICAL 3-ACT DEMOSCENE ENGINE)
+       * ============================================================================ */
+
+      const GLSL_FULLSCREEN_VS = `#version 300 es
+precision highp float;
+out vec2 vUv;
+void main() {
+  vec2 verts[3] = vec2[3](
+    vec2(-1.0, -1.0),
+    vec2( 3.0, -1.0),
+    vec2(-1.0,  3.0)
+  );
+  vec2 p = verts[gl_VertexID];
+  gl_Position = vec4(p, 0.0, 1.0);
+  vUv = p * 0.5 + 0.5;
+}
+`;
+
+      const GLSL_SCENE_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform vec4 uResTime;
+uniform vec4 uAudioCtrl;
+uniform vec4 uCamAct;
+uniform vec4 uTrans;
+
+const vec3 COL_VOID    = vec3(0.010, 0.007, 0.024);
+const vec3 COL_CRIMSON = vec3(1.000, 0.118, 0.420);
+const vec3 COL_CYAN    = vec3(0.000, 0.961, 1.000);
+const vec3 COL_VIOLET  = vec3(0.482, 0.184, 1.000);
+const vec3 COL_PLASMA  = vec3(1.000, 0.482, 0.000);
+const vec3 COL_CORE    = vec3(1.000, 0.930, 0.840);
+
+float fmod(float x, float y) { return x - y * floor(x / y); }
+vec3 fmod3(vec3 x, float y) { return x - y * floor(x / y); }
+mat2 rot2(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+float smax(float a, float b, float k) { return -smin(-a, -b, k); }
+
+float sdBox(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+float sdTorus(vec3 p, vec2 t) {
+  vec2 q = vec2(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}
+
+vec3 neonPalette(float t) {
+  vec3 c1 = mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(t));
+  vec3 c2 = mix(COL_VIOLET, COL_PLASMA, 0.5 + 0.5 * cos(t * 0.7 + 1.2));
+  return mix(c1, c2, 0.35 + 0.25 * sin(t * 1.7));
+}
+
+struct HitInfo {
+  float d;
+  float mat;
+  float glowDist;
+  vec3 glowCol;
+};
+
+vec2 conduitPath(float z) {
+  return vec2(
+    sin(z * 0.16) * 2.1 + cos(z * 0.075) * 1.1,
+    cos(z * 0.13) * 1.5 + sin(z * 0.065) * 0.8
+  );
+}
+
+HitInfo mapAct1(vec3 p, float t, float beat) {
+  vec2 pathXY = conduitPath(p.z);
+  p.xy -= pathXY;
+  float twist = p.z * 0.14 + sin(t * 0.45) * 0.6;
+  p.xy = rot2(twist) * p.xy;
+
+  vec2 ap = abs(p.xy);
+  float oct = max(max(ap.x, ap.y), (ap.x + ap.y) * 0.70710678);
+  float tunnelRadius = 3.15 + 0.16 * sin(p.z * 0.45 - t * 3.0);
+  float dWall = tunnelRadius - oct;
+
+  float zCell = fmod(p.z + 1.2, 2.4) - 1.2;
+  float groove = abs(zCell) - 0.06;
+  float angle = atan(p.y, p.x);
+  float angGroove = abs(sin(angle * 4.0)) - 0.04;
+  dWall += 0.055 * smoothstep(0.06, 0.0, groove) + 0.035 * smoothstep(0.05, 0.0, angGroove);
+
+  float ribZ = fmod(p.z + 1.2, 2.4) - 1.2;
+  float ribRing = length(vec2(oct - (tunnelRadius - 0.14), ribZ)) - (0.065 + 0.025 * beat);
+
+  float beamAngle = fmod(angle + 3.14159265 + p.z * 0.18 - t * 1.4, 1.5707963) - 0.78539816;
+  float rad = length(p.xy);
+  float dBeams = length(vec2(rad - 2.35, beamAngle * 2.35)) - 0.045;
+
+  float gateZ = fmod(p.z + 4.8, 9.6) - 4.8;
+  vec2 gRot = rot2(t * 1.2 + floor((p.z + 4.8) / 9.6) * 0.785) * p.xy;
+  vec2 ga = abs(gRot);
+  float gateOct = max(max(ga.x, ga.y), (ga.x + ga.y) * 0.70710678);
+  float dGate = max(abs(gateOct - 1.55) - 0.055, abs(gateZ) - 0.08);
+
+  float dNeon = min(ribRing, min(dBeams, dGate));
+  float wave = sin(p.z * 0.35 - t * 6.5);
+  vec3 gCol = mix(COL_CYAN, COL_CRIMSON, smoothstep(-0.35, 0.35, wave));
+  if (dGate < ribRing && dGate < dBeams) {
+    gCol = mix(COL_PLASMA, COL_CORE, 0.35 + 0.45 * beat);
+  } else if (dBeams < ribRing) {
+    gCol = mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * sin(p.z * 0.6 - t * 9.0));
+  }
+
+  HitInfo res;
+  if (dNeon < dWall) { res.d = dNeon; res.mat = 1.0; }
+  else { res.d = dWall; res.mat = 0.0; }
+  res.glowDist = dNeon;
+  res.glowCol = gCol;
+  return res;
+}
+
+float sdGeminiStar(vec3 p_in, float beat) {
+  float scale = 1.0 + 0.09 * beat;
+  vec3 p = p_in / scale;
+  vec3 q = abs(p);
+  float dOct = (q.x * 0.92 + q.y * 0.92 + q.z * 1.52 - 1.58) * 0.54;
+  float dScoop = length(q.xy - vec2(1.24, 1.24)) - 1.02;
+  float dScoopXZ = length(vec2(q.x, q.z * 1.35) - vec2(1.28, 1.15)) - 0.96;
+  float dScoopYZ = length(vec2(q.y, q.z * 1.35) - vec2(1.28, 1.15)) - 0.96;
+  float carved = smax(dOct, -dScoop, 0.06);
+  return smax(carved, -min(dScoopXZ, dScoopYZ), 0.08) * scale;
+}
+
+HitInfo mapAct2(vec3 p, float t, float beat) {
+  float dFloor = p.y + 2.35;
+
+  vec3 sp = p - vec3(0.0, 0.35 + 0.14 * sin(t * 1.7), 0.0);
+  sp.xz = rot2(t * 0.65) * sp.xz;
+  sp.yz = rot2(sin(t * 0.9) * 0.28) * sp.yz;
+
+  float dStar = sdGeminiStar(sp, beat);
+  float dInnerCore = length(sp) - (0.38 + 0.14 * beat);
+
+  vec3 centerP = p - vec3(0.0, 0.35, 0.0);
+  vec3 r1 = centerP;
+  r1.xy = rot2(t * 0.95) * r1.xy;
+  r1.yz = rot2(0.75 + t * 0.45) * r1.yz;
+  float dRing1 = sdTorus(r1, vec2(2.35, 0.048 + 0.018 * beat));
+
+  vec3 r2 = centerP;
+  r2.xz = rot2(-t * 1.25) * r2.xz;
+  r2.xy = rot2(-0.85 + sin(t * 0.6) * 0.5) * r2.xy;
+  float dRing2 = sdTorus(r2, vec2(2.95, 0.042 + 0.015 * beat));
+
+  vec3 r3 = centerP;
+  r3.yz = rot2(t * 0.55) * r3.yz;
+  r3.xz = rot2(1.1 - t * 0.7) * r3.xz;
+  float dRing3 = sdTorus(r3, vec2(3.55, 0.036 + 0.014 * beat));
+
+  float ang = atan(p.z, p.x);
+  float sector = 6.2831853 / 8.0;
+  float sectorId = floor((ang + sector * 0.5) / sector);
+  float localAng = fmod(ang + sector * 0.5, sector) - sector * 0.5;
+  float radXZ = length(p.xz);
+  float bob = sin(t * 1.15 + sectorId * 1.35) * 0.35;
+  vec3 mp = vec3(cos(localAng) * radXZ - 6.9, p.y - (0.3 + bob), sin(localAng) * radXZ);
+  float dMono = sdBox(mp, vec3(0.55, 2.55, 0.55)) - 0.08;
+  float dMonoSlit = sdBox(mp - vec3(-0.56, 0.0, 0.0), vec3(0.05, 2.1, 0.065));
+
+  float dRings = min(dRing1, min(dRing2, dRing3));
+  float dNeon = min(dInnerCore, min(dRings, dMonoSlit));
+
+  vec3 gCol = COL_CYAN;
+  if (dInnerCore < dRings && dInnerCore < dMonoSlit) gCol = mix(COL_PLASMA, COL_CORE, 0.55 + 0.35 * beat);
+  else if (dRing1 <= dRing2 && dRing1 <= dRing3 && dRing1 <= dMonoSlit) gCol = COL_CYAN;
+  else if (dRing2 <= dRing3 && dRing2 <= dMonoSlit) gCol = COL_CRIMSON;
+  else if (dRing3 <= dMonoSlit) gCol = COL_VIOLET;
+  else gCol = mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(sectorId * 1.57 + t * 1.5));
+
+  float glowDist = min(dNeon, max(dStar, 0.02) * 1.35);
+  if (dStar < dNeon) gCol = mix(gCol, mix(COL_PLASMA, COL_CRIMSON, 0.45), 0.5);
+
+  HitInfo res;
+  res.d = dFloor; res.mat = 2.0;
+  if (dMono < res.d) { res.d = dMono; res.mat = 0.0; }
+  if (dStar < res.d) { res.d = dStar; res.mat = 3.0; }
+  if (dNeon < res.d) { res.d = dNeon; res.mat = 1.0; }
+  res.glowDist = glowDist;
+  res.glowCol = gCol;
+  return res;
+}
+
+HitInfo mapAct3(vec3 p, float t, float beat) {
+  vec2 camPath = vec2(sin(p.z * 0.22) * 0.9, cos(p.z * 0.19) * 0.9);
+  float corridorDist = 1.15 - length(p.xy - camPath);
+
+  float waveZ = floor(p.z / 12.0) * 12.0 + 6.0;
+  vec3 waveOrigin = vec3(sin(waveZ * 0.22) * 0.9, cos(waveZ * 0.19) * 0.9, waveZ);
+  float waveRad = fmod(t * 4.8, 5.5);
+  float dShock = abs(length(p - waveOrigin) - waveRad) - (0.045 + 0.04 * beat);
+
+  vec3 q = fmod3(p + 3.0, 6.0) - 3.0;
+  float scale = 1.0;
+  float trap = 1e5;
+  float foldAngle = 0.35 + 0.16 * sin(t * 0.6) + 0.08 * beat;
+  mat2 rFold1 = rot2(foldAngle);
+  mat2 rFold2 = rot2(-foldAngle * 0.7 + 0.4);
+
+  for (int i = 0; i < 4; i++) {
+    q = abs(q);
+    if (q.x < q.y) q.xy = q.yx;
+    if (q.x < q.z) q.xz = q.zx;
+    if (q.y < q.z) q.yz = q.zy;
+    q.xy = rFold1 * q.xy;
+    q = q * 1.92 - vec3(1.78, 1.42, 0.95);
+    if (q.z < -0.5 * 1.92) q.z += 1.92;
+    q.xz = rFold2 * q.xz;
+    scale *= 1.92;
+    trap = min(trap, length(q.xy));
+  }
+
+  float dFractalRaw = (sdBox(q, vec3(0.95)) - 0.08) / scale;
+  float dFractal = smax(dFractalRaw, corridorDist, 0.25);
+  float dVeins = max(dFractal, abs(trap - 0.35) * 0.14);
+  float dNeon = min(dShock, dVeins + 0.015);
+
+  vec3 gCol = neonPalette(trap * 2.4 + p.z * 0.22 - t * 2.5);
+  if (dShock < dVeins) gCol = mix(COL_PLASMA, COL_CORE, 0.55 + 0.35 * beat);
+
+  HitInfo res;
+  if (dShock < dFractal) { res.d = dShock; res.mat = 1.0; }
+  else { res.d = dFractal; res.mat = 0.0; }
+  res.glowDist = dNeon;
+  res.glowCol = gCol;
+  return res;
+}
+
+HitInfo mapScene(int actId, vec3 p, float t, float beat) {
+  if (actId == 0) return mapAct1(p, t, beat);
+  if (actId == 1) return mapAct2(p, t, beat);
+  return mapAct3(p, t, beat);
+}
+
+vec3 calcNormal(int actId, vec3 p, float t, float beat) {
+  float e = 0.0025;
+  vec2 k = vec2(1.0, -1.0);
+  return normalize(
+    k.xyy * mapScene(actId, p + k.xyy * e, t, beat).d +
+    k.yyx * mapScene(actId, p + k.yyx * e, t, beat).d +
+    k.yxy * mapScene(actId, p + k.yxy * e, t, beat).d +
+    k.xxx * mapScene(actId, p + k.xxx * e, t, beat).d +
+    vec3(1e-5)
+  );
+}
+
+vec3 renderAct(int actId, vec2 uv, float t, float beat, float bass, float overdrive) {
+  float aspect = uTrans.z;
+  vec2 pUV = (uv - 0.5) * vec2(aspect, 1.0) * 2.0;
+  float mx = uCamAct.x;
+  float my = uCamAct.y;
+
+  float shakeAmp = (0.008 + 0.014 * float(actId == 2)) * beat * overdrive;
+  pUV += vec2(sin(t * 57.0), cos(t * 63.0)) * shakeAmp;
+
+  vec3 ro = vec3(0.0);
+  vec3 ta = vec3(0.0, 0.0, 1.0);
+  float roll = 0.0;
+  float fov = 1.35;
+
+  if (actId == 0) {
+    float zPos = t * 9.5;
+    vec2 c0 = conduitPath(zPos);
+    vec2 c1 = conduitPath(zPos + 3.2);
+    ro = vec3(c0.x + mx * 0.75, c0.y + my * 0.65, zPos);
+    ta = vec3(c1.x + mx * 1.4, c1.y + my * 1.1, zPos + 3.2);
+    roll = sin(t * 0.55) * 0.48 - mx * 0.35;
+    fov = 1.22 - 0.14 * beat;
+  } else if (actId == 1) {
+    float orbitAng = t * 0.34 + mx * 1.65;
+    float orbitRad = 6.35 + sin(t * 0.42) * 1.15 - beat * 0.25;
+    float camY = 0.55 + sin(t * 0.31) * 1.25 + my * 1.85;
+    ro = vec3(cos(orbitAng) * orbitRad, max(-1.75, camY), sin(orbitAng) * orbitRad);
+    ta = vec3(0.0, 0.25, 0.0);
+    roll = sin(t * 0.28) * 0.08 - mx * 0.1;
+    fov = 1.45 - 0.08 * beat;
+  } else {
+    float zPos = t * 6.8;
+    vec2 c0 = vec2(sin(zPos * 0.22) * 0.9, cos(zPos * 0.19) * 0.9);
+    vec2 c1 = vec2(sin((zPos + 2.5) * 0.22) * 0.9, cos((zPos + 2.5) * 0.19) * 0.9);
+    ro = vec3(c0.x + mx * 0.45, c0.y + my * 0.45, zPos);
+    ta = vec3(c1.x + mx * 1.2, c1.y + my * 1.2, zPos + 2.5);
+    roll = t * 0.42 + sin(t * 1.3) * 0.45 - mx * 0.5;
+    fov = 1.08 + 0.22 * sin(t * 0.9) - 0.18 * beat;
+  }
+
+  vec3 cw = normalize(ta - ro);
+  vec3 upRef = vec3(sin(roll), cos(roll), 0.0);
+  vec3 cu = normalize(cross(cw, upRef));
+  vec3 cv = normalize(cross(cu, cw));
+  vec3 rd = normalize(cu * pUV.x + cv * pUV.y + cw * fov);
+
+  float dist = 0.0;
+  float hitMat = -1.0;
+  vec3 hitPos = ro;
+  vec3 glowAccum = vec3(0.0);
+  float maxDist = 48.0;
+
+  for (int i = 0; i < 82; i++) {
+    vec3 p = ro + rd * dist;
+    HitInfo h = mapScene(actId, p, t, beat);
+    float gStep = 0.011 / (0.028 + h.glowDist * h.glowDist * 4.2);
+    glowAccum += h.glowCol * gStep * (0.75 + 0.55 * beat);
+    if (h.d < 0.0022) {
+      hitMat = h.mat;
+      hitPos = p;
+      break;
+    }
+    dist += h.d * 0.88;
+    if (dist > maxDist) break;
+  }
+
+  vec3 col = COL_VOID + mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * rd.y) * 0.045;
+
+  if (hitMat >= 0.0) {
+    vec3 n = calcNormal(actId, hitPos, t, beat);
+    vec3 viewDir = -rd;
+    float fresnel = pow(max(1.0 - max(dot(n, viewDir), 0.0), 0.0), 3.4);
+    vec3 refl = reflect(rd, n);
+
+    if (hitMat == 1.0) {
+      HitInfo hInfo = mapScene(actId, hitPos, t, beat);
+      col = mix(hInfo.glowCol, COL_CORE, 0.45 + 0.35 * fresnel) * (2.4 + 1.4 * beat);
+    } else if (hitMat == 3.0) {
+      vec3 l1 = normalize(vec3(0.6, 0.8, 0.5));
+      vec3 l2 = normalize(vec3(-0.7, -0.3, -0.6));
+      float spec1 = pow(max(dot(refl, l1), 0.0), 36.0);
+      float spec2 = pow(max(dot(refl, l2), 0.0), 22.0);
+      vec3 corePulse = mix(COL_PLASMA, COL_CORE, 0.4 + 0.5 * beat);
+      vec3 rimCol = mix(COL_CYAN, COL_CRIMSON, 0.5 + 0.5 * sin(hitPos.y * 2.5 - t * 2.0));
+      float coreGlow = exp(-length(hitPos - vec3(0.0, 0.35, 0.0)) * 1.15);
+      col = vec3(0.05, 0.02, 0.10)
+          + corePulse * coreGlow * (1.85 + 1.3 * beat)
+          + rimCol * fresnel * (2.6 + 1.2 * bass)
+          + COL_CORE * spec1 * 1.8
+          + COL_CYAN * spec2 * 1.1;
+    } else if (hitMat == 2.0) {
+      vec2 gridXZ = abs(fract(hitPos.xz * 0.65 - 0.5) - 0.5) / 0.65;
+      float gridLine = smoothstep(0.032, 0.004, min(gridXZ.x, gridXZ.y));
+      float radFloor = length(hitPos.xz);
+      float pulseRing = smoothstep(0.18, 0.0, abs(fmod(radFloor - t * 3.8, 5.2) - 2.6));
+      vec3 gridCol = mix(COL_VIOLET, COL_CYAN, 0.5 + 0.5 * sin(radFloor * 0.45 - t * 2.2));
+      vec3 floorEmissive = gridCol * gridLine * (0.55 + 0.9 * pulseRing * (0.6 + beat)) * exp(-radFloor * 0.085);
+
+      float rDist = 0.06;
+      vec3 reflGlow = vec3(0.0);
+      vec3 reflHitCol = COL_VOID;
+      for (int j = 0; j < 30; j++) {
+        vec3 rp = hitPos + n * 0.02 + refl * rDist;
+        HitInfo rh = mapAct2(rp, t, beat);
+        reflGlow += rh.glowCol * (0.015 / (0.035 + rh.glowDist * rh.glowDist * 3.8));
+        if (rh.d < 0.012) {
+          if (rh.mat == 1.0 || rh.mat == 3.0) reflHitCol = mix(rh.glowCol, COL_CORE, 0.35) * 1.8;
+          else reflHitCol = vec3(0.03, 0.02, 0.06);
+          break;
+        }
+        rDist += rh.d * 1.1;
+        if (rDist > 22.0) break;
+      }
+      float mirrorStrength = 0.35 + 0.62 * fresnel;
+      col = vec3(0.012, 0.010, 0.024) + floorEmissive + (reflHitCol + reflGlow * 0.68) * mirrorStrength;
+    } else {
+      vec3 lDir = normalize(vec3(0.3, 0.7, -0.5));
+      float diff = max(dot(n, lDir), 0.0);
+      float spec = pow(max(dot(refl, lDir), 0.0), 28.0);
+      vec3 bounceCol = neonPalette(hitPos.z * 0.25 - t * 1.5);
+      vec3 rimCol = mix(COL_CYAN, COL_CRIMSON, 0.5 + 0.5 * sin(hitPos.z * 0.3 + hitPos.y));
+      col = vec3(0.020, 0.016, 0.042)
+          + bounceCol * diff * 0.22
+          + rimCol * fresnel * (1.15 + 0.85 * bass)
+          + COL_CORE * spec * 0.65;
+      if (actId == 2) {
+        float edgePulse = smoothstep(0.35, 0.95, abs(sin(hitPos.z * 1.2 - t * 5.0)));
+        col += mix(COL_CRIMSON, COL_CYAN, edgePulse) * fresnel * (0.8 + beat);
+      }
+    }
+
+    float fogDensity = (actId == 2) ? 0.0034 : 0.0022;
+    float fogAmount = 1.0 - exp(-dist * dist * fogDensity);
+    vec3 fogCol = mix(COL_VOID, mix(COL_VIOLET, COL_CYAN, 0.35) * 0.22, 0.45 + 0.35 * bass);
+    col = mix(col, fogCol, clamp(fogAmount, 0.0, 1.0));
+  }
+
+  col += glowAccum * (0.48 * overdrive);
+
+  if (actId == 2) {
+    float r = length(pUV);
+    float ang = atan(pUV.y, pUV.x);
+    float rays = pow(max(0.0, cos(ang * 6.0 + t * 2.2)), 6.0);
+    float flare = exp(-r * 2.8) * (0.28 + 0.65 * beat) * overdrive;
+    col += mix(COL_CRIMSON, COL_CYAN, 0.5 + 0.5 * sin(ang * 3.0 - t)) * rays * flare;
+    col += COL_PLASMA * exp(-r * 6.5) * 0.45 * beat * overdrive;
+  }
+
+  if (actId == 0) {
+    float r = length(pUV);
+    float ang = atan(pUV.y, pUV.x);
+    float streak = pow(max(0.0, sin(ang * 24.0 + sin(t * 2.0))), 14.0) * smoothstep(0.45, 1.45, r);
+    float streakPulse = 0.5 + 0.5 * sin(ang * 7.0 - t * 12.0);
+    col += mix(COL_CYAN, COL_CRIMSON, streakPulse) * streak * (0.22 + 0.45 * beat) * overdrive;
+  }
+
+  return col;
+}
+
+void main() {
+  float t = uResTime.z;
+  float beat = uAudioCtrl.x;
+  float bass = uAudioCtrl.y;
+  float overdrive = uAudioCtrl.z;
+  int curAct = int(floor(uCamAct.z + 0.5));
+  int prvAct = int(floor(uCamAct.w + 0.5));
+  float blend = uTrans.x;
+  float flash = uTrans.y;
+
+  vec2 uv = vUv;
+  if (flash > 0.005) {
+    vec2 dir = uv - 0.5;
+    uv = 0.5 + dir * (1.0 - flash * 0.22 * length(dir));
+  }
+
+  vec3 col = renderAct(curAct, uv, t, beat, bass, overdrive);
+  if (blend > 0.01 && prvAct != curAct) {
+    vec3 prevCol = renderAct(prvAct, uv, t, beat, bass, overdrive);
+    col = mix(col, prevCol, blend);
+  }
+
+  vec3 hdrEncoded = col / (1.0 + col * 0.45);
+  fragColor = vec4(clamp(hdrEncoded, 0.0, 1.0), 1.0);
+}
+`;
+
+      const GLSL_POST_FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D uSceneTex;
+uniform vec4 uResTime;
+uniform vec4 uAudioCtrl;
+uniform vec4 uTrans;
+
+vec3 decodeHDR(vec3 c) {
+  return c / max(vec3(1.0) - c * 0.45, vec3(0.04));
+}
+
+vec3 acesFilm(vec3 x) {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = vUv;
+  float t = uResTime.z;
+  float beat = uAudioCtrl.x;
+  float bass = uAudioCtrl.y;
+  float overdrive = uAudioCtrl.z;
+  float flash = uTrans.y;
+
+  vec2 centerOffset = uv - 0.5;
+  float distFromCenter = length(centerOffset);
+
+  float caAmount = (0.0022 + 0.0085 * beat * overdrive + 0.024 * flash) * distFromCenter;
+  vec2 caDir = normalize(centerOffset + vec2(1e-5)) * caAmount;
+
+  float rS = decodeHDR(texture(uSceneTex, clamp(uv + caDir, 0.001, 0.999)).rgb).r;
+  float gS = decodeHDR(texture(uSceneTex, uv).rgb).g;
+  float bS = decodeHDR(texture(uSceneTex, clamp(uv - caDir, 0.001, 0.999)).rgb).b;
+  vec3 col = vec3(rS, gS, bS);
+
+  vec2 px = vec2(1.0 / max(uResTime.x, 1.0), 1.0 / max(uResTime.y, 1.0));
+  vec3 b1 = decodeHDR(texture(uSceneTex, clamp(uv + vec2(px.x * 5.0, 0.0), 0.001, 0.999)).rgb);
+  vec3 b2 = decodeHDR(texture(uSceneTex, clamp(uv - vec2(px.x * 5.0, 0.0), 0.001, 0.999)).rgb);
+  vec3 b3 = decodeHDR(texture(uSceneTex, clamp(uv + vec2(px.x * 13.0, 0.0), 0.001, 0.999)).rgb);
+  vec3 b4 = decodeHDR(texture(uSceneTex, clamp(uv - vec2(px.x * 13.0, 0.0), 0.001, 0.999)).rgb);
+  vec3 b5 = decodeHDR(texture(uSceneTex, clamp(uv + vec2(0.0, px.y * 5.0), 0.001, 0.999)).rgb);
+  vec3 b6 = decodeHDR(texture(uSceneTex, clamp(uv - vec2(0.0, px.y * 5.0), 0.001, 0.999)).rgb);
+  vec3 b7 = decodeHDR(texture(uSceneTex, clamp(uv + vec2(px.x * 8.0, px.y * 8.0), 0.001, 0.999)).rgb);
+  vec3 b8 = decodeHDR(texture(uSceneTex, clamp(uv - vec2(px.x * 8.0, px.y * 8.0), 0.001, 0.999)).rgb);
+
+  vec3 bloom = (b1 + b2 + b5 + b6) * 0.14 + (b3 + b4) * 0.16 + (b7 + b8) * 0.08;
+  col += max(bloom - 0.42, 0.0) * (0.42 + 0.25 * beat) * overdrive;
+
+  if (flash > 0.001) {
+    vec3 flashCol = mix(vec3(0.0, 0.96, 1.0), vec3(1.0, 0.25, 0.55), 0.5 + 0.5 * sin(t * 9.0));
+    col += flashCol * flash * 1.45;
+  }
+
+  col = acesFilm(col * (0.95 + 0.15 * bass));
+  col *= (0.965 + 0.035 * sin(uv.y * uResTime.y * 1.55));
+
+  float grain = fract(sin(dot(uv * vec2(12.9898, 78.233) + t * 0.01, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (grain - 0.5) * 0.018;
+
+  float vig = smoothstep(1.18, 0.28, distFromCenter * 1.25);
+  col *= (0.58 + 0.42 * vig);
+  col = pow(max(col, 0.0), vec3(0.94));
+  fragColor = vec4(col, 1.0);
+}
+`;
+
+      /* ============================================================================
+       * 5. GPU BACKENDS: WEBGPU (PRIMARY) & WEBGL2 (SEAMLESS FALLBACK)
+       * ============================================================================ */
+
+      class WebGPURenderer {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.device = null;
+          this.context = null;
+          this.format = null;
+          this.uniformBuffer = null;
+          this.scenePipeline = null;
+          this.postPipeline = null;
+          this.sceneBindGroup = null;
+          this.postBindGroup = null;
+          this.offscreenTex = null;
+          this.sampler = null;
+          this.width = 1;
+          this.height = 1;
+        }
+
+        async init() {
+          if (!navigator.gpu) {
+            throw new Error('WebGPU API not available in this browser');
+          }
+          const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+          if (!adapter) {
+            throw new Error('No WebGPU adapter found');
+          }
+          this.device = await adapter.requestDevice();
+          this.context = this.canvas.getContext('webgpu');
+          if (!this.context) {
+            throw new Error('Could not obtain WebGPU canvas context');
+          }
+          this.format = navigator.gpu.getPreferredCanvasFormat();
+          this.context.configure({
+            device: this.device,
+            format: this.format,
+            alphaMode: 'opaque'
+          });
+
+          // Compile and validate both WGSL shader modules strictly
+          const sceneMod = this.device.createShaderModule({ code: WGSL_SCENE_SHADER });
+          const postMod = this.device.createShaderModule({ code: WGSL_POST_SHADER });
+
+          if (sceneMod.getCompilationInfo) {
+            const info1 = await sceneMod.getCompilationInfo();
+            const err1 = info1.messages.find((m) => m.type === 'error');
+            if (err1) throw new Error('WGSL Scene Error: ' + err1.message);
+          }
+          if (postMod.getCompilationInfo) {
+            const info2 = await postMod.getCompilationInfo();
+            const err2 = info2.messages.find((m) => m.type === 'error');
+            if (err2) throw new Error('WGSL Post Error: ' + err2.message);
+          }
+
+          // 64-byte uniform buffer (4 x vec4<f32>)
+          this.uniformBuffer = this.device.createBuffer({
+            size: 64,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+          });
+
+          this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
+            addressModeU: 'clamp-to-edge',
+            addressModeV: 'clamp-to-edge'
+          });
+
+          this.device.pushErrorScope('validation');
+
+          this.scenePipeline = this.device.createRenderPipeline({
+            layout: 'auto',
+            vertex: { module: sceneMod, entryPoint: 'vs_main' },
+            fragment: {
+              module: sceneMod,
+              entryPoint: 'fs_main',
+              targets: [{ format: 'rgba8unorm' }]
+            },
+            primitive: { topology: 'triangle-list' }
+          });
+
+          this.postPipeline = this.device.createRenderPipeline({
+            layout: 'auto',
+            vertex: { module: postMod, entryPoint: 'vs_main' },
+            fragment: {
+              module: postMod,
+              entryPoint: 'fs_main',
+              targets: [{ format: this.format }]
+            },
+            primitive: { topology: 'triangle-list' }
+          });
+
+          this.sceneBindGroup = this.device.createBindGroup({
+            layout: this.scenePipeline.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }]
+          });
+
+          const valErr = await this.device.popErrorScope();
+          if (valErr) {
+            throw new Error('WebGPU pipeline validation failed: ' + valErr.message);
+          }
+
+          this.resize(this.canvas.width || 640, this.canvas.height || 360);
+          return true;
+        }
+
+        resize(w, h) {
+          this.width = Math.max(2, Math.floor(w));
+          this.height = Math.max(2, Math.floor(h));
+          if (this.offscreenTex) {
+            this.offscreenTex.destroy();
+          }
+          this.offscreenTex = this.device.createTexture({
+            size: [this.width, this.height, 1],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+          });
+          this.postBindGroup = this.device.createBindGroup({
+            layout: this.postPipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: this.uniformBuffer } },
+              { binding: 1, resource: this.offscreenTex.createView() },
+              { binding: 2, resource: this.sampler }
+            ]
+          });
+        }
+
+        render(uniformData) {
+          this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
+          const encoder = this.device.createCommandEncoder();
+
+          // Pass 1: Raymarched 3D SDF Demoscene into Offscreen Texture
+          const pass1 = encoder.beginRenderPass({
+            colorAttachments: [{
+              view: this.offscreenTex.createView(),
+              clearValue: { r: 0.01, g: 0.007, b: 0.024, a: 1.0 },
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          });
+          pass1.setPipeline(this.scenePipeline);
+          pass1.setBindGroup(0, this.sceneBindGroup);
+          pass1.draw(3, 1, 0, 0);
+          pass1.end();
+
+          // Pass 2: Cinematic Post-Processing (Chromatic Aberration + Bloom + ACES)
+          const swapView = this.context.getCurrentTexture().createView();
+          const pass2 = encoder.beginRenderPass({
+            colorAttachments: [{
+              view: swapView,
+              clearValue: { r: 0, g: 0, b: 0, a: 1 },
+              loadOp: 'clear',
+              storeOp: 'store'
+            }]
+          });
+          pass2.setPipeline(this.postPipeline);
+          pass2.setBindGroup(0, this.postBindGroup);
+          pass2.draw(3, 1, 0, 0);
+          pass2.end();
+
+          this.device.queue.submit([encoder.finish()]);
+        }
+      }
+
+      class WebGL2Renderer {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.gl = null;
+          this.sceneProg = null;
+          this.postProg = null;
+          this.fbo = null;
+          this.offscreenTex = null;
+          this.vao = null;
+          this.width = 1;
+          this.height = 1;
+          this.sceneLocs = {};
+          this.postLocs = {};
+        }
+
+        compile(type, src) {
+          const gl = this.gl;
+          const sh = gl.createShader(type);
+          gl.shaderSource(sh, src);
+          gl.compileShader(sh);
+          if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            const log = gl.getShaderInfoLog(sh);
+            gl.deleteShader(sh);
+            throw new Error('GLSL compile error: ' + log);
+          }
+          return sh;
+        }
+
+        link(vsSrc, fsSrc) {
+          const gl = this.gl;
+          const vs = this.compile(gl.VERTEX_SHADER, vsSrc);
+          const fs = this.compile(gl.FRAGMENT_SHADER, fsSrc);
+          const prog = gl.createProgram();
+          gl.attachShader(prog, vs);
+          gl.attachShader(prog, fs);
+          gl.linkProgram(prog);
+          gl.deleteShader(vs);
+          gl.deleteShader(fs);
+          if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+            throw new Error('GLSL link error: ' + gl.getProgramInfoLog(prog));
+          }
+          return prog;
+        }
+
+        async init() {
+          const gl = this.canvas.getContext('webgl2', {
+            antialias: false,
+            depth: false,
+            stencil: false,
+            alpha: false,
+            powerPreference: 'high-performance'
+          });
+          if (!gl) {
+            throw new Error('WebGL2 context unavailable on this device');
+          }
+          this.gl = gl;
+          this.sceneProg = this.link(GLSL_FULLSCREEN_VS, GLSL_SCENE_FS);
+          this.postProg = this.link(GLSL_FULLSCREEN_VS, GLSL_POST_FS);
+
+          this.sceneLocs = {
+            uResTime: gl.getUniformLocation(this.sceneProg, 'uResTime'),
+            uAudioCtrl: gl.getUniformLocation(this.sceneProg, 'uAudioCtrl'),
+            uCamAct: gl.getUniformLocation(this.sceneProg, 'uCamAct'),
+            uTrans: gl.getUniformLocation(this.sceneProg, 'uTrans')
+          };
+          this.postLocs = {
+            uSceneTex: gl.getUniformLocation(this.postProg, 'uSceneTex'),
+            uResTime: gl.getUniformLocation(this.postProg, 'uResTime'),
+            uAudioCtrl: gl.getUniformLocation(this.postProg, 'uAudioCtrl'),
+            uTrans: gl.getUniformLocation(this.postProg, 'uTrans')
+          };
+
+          this.vao = gl.createVertexArray();
+          this.fbo = gl.createFramebuffer();
+          this.offscreenTex = gl.createTexture();
+          this.resize(this.canvas.width || 640, this.canvas.height || 360);
+          return true;
+        }
+
+        resize(w, h) {
+          const gl = this.gl;
+          this.width = Math.max(2, Math.floor(w));
+          this.height = Math.max(2, Math.floor(h));
+          gl.bindTexture(gl.TEXTURE_2D, this.offscreenTex);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+          gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.offscreenTex, 0);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+        render(u) {
+          const gl = this.gl;
+          gl.bindVertexArray(this.vao);
+
+          // Pass 1: Scene to Offscreen Framebuffer
+          gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+          gl.viewport(0, 0, this.width, this.height);
+          gl.useProgram(this.sceneProg);
+          gl.uniform4f(this.sceneLocs.uResTime, u[0], u[1], u[2], u[3]);
+          gl.uniform4f(this.sceneLocs.uAudioCtrl, u[4], u[5], u[6], u[7]);
+          gl.uniform4f(this.sceneLocs.uCamAct, u[8], u[9], u[10], u[11]);
+          gl.uniform4f(this.sceneLocs.uTrans, u[12], u[13], u[14], u[15]);
+          gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+          // Pass 2: Cinematic Post-Processing to Screen
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+          gl.useProgram(this.postProg);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, this.offscreenTex);
+          gl.uniform1i(this.postLocs.uSceneTex, 0);
+          gl.uniform4f(this.postLocs.uResTime, u[0], u[1], u[2], u[3]);
+          gl.uniform4f(this.postLocs.uAudioCtrl, u[4], u[5], u[6], u[7]);
+          gl.uniform4f(this.postLocs.uTrans, u[12], u[13], u[14], u[15]);
+          gl.drawArrays(gl.TRIANGLES, 0, 3);
+        }
+      }
+
+      /* ============================================================================
+       * 6. DOM REFERENCES & INTERACTIVE HUD WIRING
+       * ============================================================================ */
+      const canvas = document.getElementById('demo-canvas');
+      const hudLayer = document.getElementById('hud-layer');
+      const hudRestorePill = document.getElementById('hud-restore-pill');
+      const hideHudBtn = document.getElementById('hide-hud-btn');
+      const backendDot = document.getElementById('backend-dot');
+      const backendLabel = document.getElementById('backend-label');
+      const metaShaderTag = document.getElementById('meta-shader-tag');
+      const fpsValueEl = document.getElementById('fps-value');
+      const resScaleLabel = document.getElementById('res-scale-label');
+      const actLabelEl = document.getElementById('act-label');
+      const beatLedEl = document.getElementById('beat-led');
+      const progressBarEl = document.getElementById('demo-progress-bar');
+      const demoClockEl = document.getElementById('demo-clock');
+
+      const topAudioBtn = document.getElementById('top-audio-btn');
+      const topAudioText = document.getElementById('top-audio-text');
+      const topAudioIcon = document.getElementById('top-audio-icon');
+      const topAudioEq = document.getElementById('top-audio-eq');
+      const eqBars = topAudioEq.querySelectorAll('.eq-bar');
+
+      const barAudioBtn = document.getElementById('bar-audio-btn');
+      const barAudioDot = document.getElementById('bar-audio-dot');
+      const barAudioLabel = document.getElementById('bar-audio-label');
+
+      const playPauseBtn = document.getElementById('play-pause-btn');
+      const playPauseIcon = document.getElementById('play-pause-icon');
+      const playPauseText = document.getElementById('play-pause-text');
+      const resetCamBtn = document.getElementById('reset-cam-btn');
+
+      const sceneBtns = document.querySelectorAll('.scene-btn');
+      const overdriveSlider = document.getElementById('overdrive-slider');
+      const overdriveVal = document.getElementById('overdrive-val');
+      const speedSlider = document.getElementById('speed-slider');
+      const speedVal = document.getElementById('speed-val');
+
+      const fatalErrorBox = document.getElementById('fatal-error-box');
+      const fatalErrorMsg = document.getElementById('fatal-error-msg');
+
+      let renderer = null;
+      const uniformData = new Float32Array(16);
+
+      function updateCanvasSize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const targetW = Math.max(320, Math.floor(window.innerWidth * dpr * state.resScale));
+        const targetH = Math.max(180, Math.floor(window.innerHeight * dpr * state.resScale));
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+          if (renderer) {
+            renderer.resize(targetW, targetH);
+          }
+        }
+        resScaleLabel.textContent = Math.round(state.resScale * 100) + '%';
+      }
+
+      function triggerActSwitch(newAct) {
+        if (newAct === state.currentAct) return;
+        state.prevAct = state.currentAct;
+        state.currentAct = newAct;
+        state.transitionBlend = 1.0;
+        state.transitionFlash = 1.0;
+        actLabelEl.textContent = ACT_META[newAct].title;
+      }
+
+      function setSceneMode(mode) {
+        state.sceneMode = mode;
+        sceneBtns.forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.scene === String(mode));
+        });
+        if (mode !== 'auto') {
+          triggerActSwitch(Number(mode));
+        }
+      }
+
+      function updateAudioUI(enabled) {
+        if (enabled) {
+          topAudioBtn.classList.remove('audio-cta-pulse', 'from-pink-600/85', 'via-fuchsia-600/85', 'to-violet-600/85', 'border-pink-300/60');
+          topAudioBtn.classList.add('from-cyan-500/35', 'via-violet-600/45', 'to-pink-600/45', 'border-cyan-300/75');
+          topAudioText.textContent = 'AUDIO LIVE';
+          topAudioIcon.innerHTML = `<svg class="w-3.5 h-3.5 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+          topAudioEq.classList.remove('hidden');
+          topAudioEq.classList.add('flex');
+
+          barAudioDot.className = 'w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f5ff]';
+          barAudioLabel.textContent = 'SYNTH 128 BPM';
+          barAudioBtn.classList.add('border-cyan-400/55', 'text-cyan-100');
+        } else {
+          topAudioBtn.classList.add('audio-cta-pulse', 'from-pink-600/85', 'via-fuchsia-600/85', 'to-violet-600/85', 'border-pink-300/60');
+          topAudioBtn.classList.remove('from-cyan-500/35', 'via-violet-600/45', 'to-pink-600/45', 'border-cyan-300/75');
+          topAudioText.textContent = 'ENABLE AUDIO';
+          topAudioIcon.innerHTML = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+          topAudioEq.classList.add('hidden');
+          topAudioEq.classList.remove('flex');
+
+          barAudioDot.className = 'w-2 h-2 rounded-full bg-white/35';
+          barAudioLabel.textContent = 'SYNTH OFF';
+          barAudioBtn.classList.remove('border-cyan-400/55', 'text-cyan-100');
+        }
+      }
+
+      async function handleAudioToggle() {
+        const isOn = await synth.toggle();
+        updateAudioUI(isOn);
+      }
+
+      function togglePlayPause() {
+        state.playing = !state.playing;
+        if (state.playing) {
+          playPauseText.textContent = 'PAUSE';
+          playPauseIcon.innerHTML = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>`;
+        } else {
+          playPauseText.textContent = 'PLAY';
+          playPauseIcon.innerHTML = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>`;
+        }
+      }
+
+      function toggleHud() {
+        state.hudVisible = !state.hudVisible;
+        hudLayer.classList.toggle('hud-hidden', !state.hudVisible);
+        if (state.hudVisible) {
+          hudRestorePill.classList.add('hidden');
+          hudRestorePill.classList.remove('flex');
+        } else {
+          hudRestorePill.classList.remove('hidden');
+          hudRestorePill.classList.add('flex');
+        }
+      }
+
+      // Bind HUD controls
+      topAudioBtn.addEventListener('click', handleAudioToggle);
+      barAudioBtn.addEventListener('click', handleAudioToggle);
+      playPauseBtn.addEventListener('click', togglePlayPause);
+      hideHudBtn.addEventListener('click', toggleHud);
+      hudRestorePill.addEventListener('click', toggleHud);
+      resetCamBtn.addEventListener('click', () => {
+        state.dragOffsetX = 0;
+        state.dragOffsetY = 0;
+        state.mouseTargetX = 0;
+        state.mouseTargetY = 0;
+      });
+
+      sceneBtns.forEach((btn) => {
+        btn.addEventListener('click', () => setSceneMode(btn.dataset.scene));
+      });
+
+      overdriveSlider.addEventListener('input', (e) => {
+        state.overdrive = parseFloat(e.target.value);
+        overdriveVal.textContent = state.overdrive.toFixed(2) + 'x';
+      });
+
+      speedSlider.addEventListener('input', (e) => {
+        state.speed = parseFloat(e.target.value);
+        speedVal.textContent = state.speed.toFixed(2) + 'x';
+      });
+
+      // Keyboard Shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        const k = e.key.toLowerCase();
+        if (k === 'h') {
+          toggleHud();
+        } else if (k === ' ') {
+          e.preventDefault();
+          togglePlayPause();
+        } else if (k === 'm') {
+          handleAudioToggle();
+        } else if (k === '0') {
+          setSceneMode('auto');
+        } else if (k === '1') {
+          setSceneMode('0');
+        } else if (k === '2') {
+          setSceneMode('1');
+        } else if (k === '3') {
+          setSceneMode('2');
+        }
+      });
+
+      // Interactive Mouse & Touch Camera Parallax + Orbit Drag
+      window.addEventListener('mousemove', (e) => {
+        const nx = (e.clientX / window.innerWidth) * 2 - 1;
+        const ny = -((e.clientY / window.innerHeight) * 2 - 1);
+        state.mouseTargetX = nx * 0.55;
+        state.mouseTargetY = ny * 0.45;
+        if (state.isDragging) {
+          const dx = (e.clientX - state.lastPointerX) / window.innerWidth;
+          const dy = (e.clientY - state.lastPointerY) / window.innerHeight;
+          state.dragOffsetX = Math.max(-1.6, Math.min(1.6, state.dragOffsetX + dx * 2.6));
+          state.dragOffsetY = Math.max(-0.9, Math.min(0.9, state.dragOffsetY - dy * 2.0));
+          state.lastPointerX = e.clientX;
+          state.lastPointerY = e.clientY;
+        }
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        state.isDragging = true;
+        state.lastPointerX = e.clientX;
+        state.lastPointerY = e.clientY;
+      });
+      window.addEventListener('mouseup', () => { state.isDragging = false; });
+
+      canvas.addEventListener('dblclick', () => {
+        state.dragOffsetX = 0;
+        state.dragOffsetY = 0;
+      });
+
+      // Touch drag support for mobile / tablet
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          state.isDragging = true;
+          state.lastPointerX = e.touches[0].clientX;
+          state.lastPointerY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (state.isDragging && e.touches.length === 1) {
+          const tx = e.touches[0].clientX;
+          const ty = e.touches[0].clientY;
+          const dx = (tx - state.lastPointerX) / window.innerWidth;
+          const dy = (ty - state.lastPointerY) / window.innerHeight;
+          state.dragOffsetX = Math.max(-1.6, Math.min(1.6, state.dragOffsetX + dx * 2.8));
+          state.dragOffsetY = Math.max(-0.9, Math.min(0.9, state.dragOffsetY - dy * 2.2));
+          state.lastPointerX = tx;
+          state.lastPointerY = ty;
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchend', () => { state.isDragging = false; });
+
+      window.addEventListener('resize', updateCanvasSize);
+
+      /* ============================================================================
+       * 7. ENGINE BOOTSTRAP & MAIN 60FPS ANIMATION LOOP
+       * ============================================================================ */
+      async function bootEngine() {
+        updateCanvasSize();
+
+        // Try WebGPU WGSL Primary Backend First
+        let initialized = false;
+        try {
+          const gpuRenderer = new WebGPURenderer(canvas);
+          await gpuRenderer.init();
+          renderer = gpuRenderer;
+          state.backend = 'WEBGPU WGSL';
+          backendLabel.textContent = 'WEBGPU WGSL';
+          metaShaderTag.textContent = 'WGSL RAYMARCH';
+          backendDot.className = 'w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f5ff]';
+          initialized = true;
+        } catch (gpuErr) {
+          // Seamless automatic fallback to WebGL2 GLSL
+          try {
+            const glRenderer = new WebGL2Renderer(canvas);
+            await glRenderer.init();
+            renderer = glRenderer;
+            state.backend = 'WEBGL2 FALLBACK';
+            backendLabel.textContent = 'WEBGL2 FALLBACK';
+            backendLabel.classList.remove('text-cyan-200');
+            backendLabel.classList.add('text-amber-300');
+            metaShaderTag.textContent = 'GLSL RAYMARCH';
+            backendDot.className = 'w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#ff9900]';
+            initialized = true;
+          } catch (glErr) {
+            fatalErrorMsg.textContent =
+              'Neither WebGPU nor WebGL2 could be initialized in this browser environment. Please enable hardware acceleration or use a modern GPU-capable browser.';
+            fatalErrorBox.classList.remove('hidden');
+            fatalErrorBox.classList.add('flex');
+            return;
+          }
+        }
+
+        if (!initialized) return;
+        updateCanvasSize();
+        startLoop();
+      }
+
+      function formatClock(sec) {
+        const s = Math.floor(sec % 60);
+        const m = Math.floor(sec / 60);
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      }
+
+      function startLoop() {
+        let lastTime = performance.now();
+        let frameIdx = 0;
+
+        function frame(now) {
+          requestAnimationFrame(frame);
+          const rawDt = Math.min(0.05, Math.max(0.001, (now - lastTime) * 0.001));
+          lastTime = now;
+
+          // Update Demo Clocks
+          if (state.playing) {
+            state.demoTime += rawDt;
+            state.shaderTime += rawDt * state.speed;
+          }
+
+          // Smooth Interactive Camera Parallax Damping
+          const desiredX = state.mouseTargetX + state.dragOffsetX;
+          const desiredY = state.mouseTargetY + state.dragOffsetY;
+          const damp = 1.0 - Math.exp(-rawDt * 6.5);
+          state.mouseX += (desiredX - state.mouseX) * damp;
+          state.mouseY += (desiredY - state.mouseY) * damp;
+
+          // Auto Demoscene 3-Act Choreography
+          const cyclePos = state.demoTime % TOTAL_DEMO_CYCLE;
+          progressBarEl.style.width = ((cyclePos / TOTAL_DEMO_CYCLE) * 100).toFixed(1) + '%';
+          demoClockEl.textContent = formatClock(state.demoTime);
+
+          if (state.sceneMode === 'auto') {
+            let targetAct = 0;
+            if (cyclePos >= ACT_META[0].duration + ACT_META[1].duration) {
+              targetAct = 2;
+            } else if (cyclePos >= ACT_META[0].duration) {
+              targetAct = 1;
+            }
+            if (targetAct !== state.currentAct) {
+              triggerActSwitch(targetAct);
+            }
+          }
+
+          // Smooth Transition Cross-Fade & Shockwave Flash Decay
+          if (state.transitionBlend > 0.0) {
+            state.transitionBlend = Math.max(0.0, state.transitionBlend - rawDt * 1.45);
+          }
+          if (state.transitionFlash > 0.0) {
+            state.transitionFlash = Math.max(0.0, state.transitionFlash - rawDt * 1.9);
+          }
+
+          // Sample Real-Time Web Audio Synth or Synthetic 128 BPM Pulse
+          const audio = synth.sampleEnergy(state.demoTime);
+          state.beatPulse += (audio.beatPulse - state.beatPulse) * (1.0 - Math.exp(-rawDt * 22.0));
+          state.bassEnergy += (audio.bassEnergy - state.bassEnergy) * (1.0 - Math.exp(-rawDt * 14.0));
+
+          // Update Beat LED & Mini Audio Equalizer Bars
+          const ledScale = 1.0 + state.beatPulse * 0.55;
+          beatLedEl.style.transform = `scale(${ledScale.toFixed(2)})`;
+          if (synth.enabled) {
+            for (let i = 0; i < eqBars.length; i++) {
+              const h = 3 + Math.round((audio.bars[i] || 0.1) * 10);
+              eqBars[i].style.height = h + 'px';
+            }
+          }
+
+          // Pack 16-Byte Aligned Uniform Buffer (4 x vec4<f32>)
+          const w = canvas.width;
+          const h = canvas.height;
+          uniformData[0] = w;
+          uniformData[1] = h;
+          uniformData[2] = state.shaderTime;
+          uniformData[3] = state.demoTime;
+
+          uniformData[4] = state.beatPulse;
+          uniformData[5] = state.bassEnergy;
+          uniformData[6] = state.overdrive;
+          uniformData[7] = state.speed;
+
+          uniformData[8] = state.mouseX;
+          uniformData[9] = state.mouseY;
+          uniformData[10] = state.currentAct;
+          uniformData[11] = state.prevAct;
+
+          uniformData[12] = state.transitionBlend;
+          uniformData[13] = state.transitionFlash;
+          uniformData[14] = w / Math.max(1, h);
+          uniformData[15] = frameIdx++;
+
+          // Render Current Frame via WebGPU or WebGL2
+          try {
+            renderer.render(uniformData);
+          } catch (renderErr) {
+            // Silently recover on transient resize/context hiccups
+          }
+
+          // FPS Counter & Gentle Dynamic Resolution Scaling
+          state.frameCount++;
+          state.fpsAccumTime += rawDt;
+          if (state.fpsAccumTime >= 0.35) {
+            const measuredFps = Math.round(state.frameCount / state.fpsAccumTime);
+            state.fps = measuredFps;
+            fpsValueEl.textContent = String(measuredFps);
+
+            if (measuredFps < 44 && state.resScale > 0.65) {
+              state.lowFpsDuration += state.fpsAccumTime;
+              state.highFpsDuration = 0;
+              if (state.lowFpsDuration >= 1.2) {
+                state.resScale = Math.max(0.65, Number((state.resScale - 0.1).toFixed(2)));
+                state.lowFpsDuration = 0;
+                updateCanvasSize();
+              }
+            } else if (measuredFps >= 57 && state.resScale < 1.0) {
+              state.highFpsDuration += state.fpsAccumTime;
+              state.lowFpsDuration = 0;
+              if (state.highFpsDuration >= 2.4) {
+                state.resScale = Math.min(1.0, Number((state.resScale + 0.05).toFixed(2)));
+                state.highFpsDuration = 0;
+                updateCanvasSize();
+              }
+            } else {
+              state.lowFpsDuration = 0;
+              state.highFpsDuration = 0;
+            }
+
+            state.frameCount = 0;
+            state.fpsAccumTime = 0;
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      window.addEventListener('load', bootEngine);
+    })();
+  </script>
+</body>
+</html>
